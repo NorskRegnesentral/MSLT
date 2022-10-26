@@ -117,6 +117,69 @@ Type objective_function<Type>::operator() (){
   vector<Type> Z_transect =  X_z*beta_z+  AalongLines*x_intensity;
 
 
+  // Transect codes:
+  // 0: start transect leg
+  // 1: node used for numerical integration (including change g(y) or end transect)
+  // 2: detection of animal
+
+  //Likelihood contribution from effort-----------------
+
+  matrix<Type> P(1,2); // Probability of being in low and high state
+
+  for(int i=0; i<Z_transect.size(); i++){
+
+    vector<Type> tmp_left = X_g_left.row(i);
+    vector<Type> tmp_right = X_g_right.row(i);
+
+    Type esw = 0;  // Effective strip width
+
+    if(code(i)!=0){
+      switch(g_function){
+      case 1:
+        if(abortLeft(i)==0){
+          esw = eshw_half_normal(tmp_left,beta_g, detectionTrunc);
+        }
+        if(abortRight(i)==0){
+          esw +=  eshw_half_normal(tmp_right,beta_g, detectionTrunc);
+        }
+        break;
+      case 2:
+        if(abortLeft(i)==0){
+          esw = eshw_hazard(tmp_left,beta_g, bHazard);
+        }
+        if(abortRight(i)==0){
+          esw +=   eshw_hazard(tmp_right,beta_g, bHazard);
+        }
+        break;
+      }
+    }
+
+    // MMPP quantities
+    vector<Type> lambda(2);
+    lambda(0) = exp(Z_transect(i))*esw;  // Low Poisson rate
+    lambda(1) = c_mmpp*lambda(0);        // High Poisson rate
+
+    switch(code(i)){
+      case 0: // Initialize new transect leg
+        P(0,0) = mu(1)/sum(mu);  // Eq. (3) in (2006)
+        P(0,1) = mu(0)/sum(mu);  // Eq. (3) in (2006)
+        break;
+      case 1:  // Not having detected anything since last node
+        P = P*expm_mmpp2(lambda,mu,lineIntegralDelta(i));
+        break;
+      case 2:  // Observation node
+        P = P*expm_mmpp2(lambda,mu,lineIntegralDelta(i));
+        P(0,0) *= lambda(0);
+        P(0,1) *= lambda(1);
+        nll -= -log(esw);  // This is the normalizing constant that was skipped above in the detection function
+        break;
+    }
+    if(code(i)!=0){
+      nll -= log(sum(P));
+      P = P/sum(P);  // Renormalize probability after event
+    }
+  }
+  //---------------------------------------------
 
   //Penalize
   if(penalize(0)==1){
