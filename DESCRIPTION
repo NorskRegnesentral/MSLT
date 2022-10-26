@@ -1,0 +1,17 @@
+Package: mslt
+Title: Multiple scale line transect
+Type: Package
+Version: 0.1.0
+Authors@R: c(person(c("Olav","Nikolai"), "Breivik",role=c("aut","cre"), email="olavbr@nr.no"),
+	    person(c("Hans","J."), "Skaug", role = c("aut"),  email="Hans.Skaug@uib.no"),
+	    person(c("Martin"), "Jullum", role = c("aut"),  email="jullum@nr.no"),
+      person("Martin","Biuw", role="ctb"))
+Description: Applying data from line transects to fit a thinned latent Gaussian point process on muliple scales. The fitted model can be used to predict abundance of points (e.g. marine mammels) in the are of intrest. 
+License: What license is it under?
+Encoding: UTF-8
+LazyData: true
+Depends: TMB,INLA, RcppEigen,mgcv
+LinkingTo: TMB, RcppEigen
+URL: ...
+BugReports: .../issues
+RoxygenNote: 7.2.1
