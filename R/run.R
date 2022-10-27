@@ -1,6 +1,6 @@
 #' @param
 #' @return fitted model
-#' @useDynLib niseEst
+#' @useDynLib mslt
 #' @export
 #' @examples
 fitLGPP = function(data,par,conf,rel.tol=1e-10,...){
@@ -9,7 +9,7 @@ fitLGPP = function(data,par,conf,rel.tol=1e-10,...){
 
   #Estimating the model and extract results-------------
   startTime <- Sys.time()
-  obj <- MakeADFun(data, par, random=c("x_intensity","x_size"), DLL="niseEst", map = map)
+  obj <- MakeADFun(data, par, random=c("x_intensity","x_size"), DLL="mslt", map = map)
 
   lower = list()
   lower$log_c_mmpp = -10#NB, set lower boundary on jump in MMPP
