@@ -260,6 +260,7 @@ Type objective_function<Type>::operator() (){
   Type abundance = area*linPred.sum()/linPred.size();
   Type logAbundance = log(abundance);
   ADREPORT(logAbundance);
+  ADREPORT(abundance);
 
   Type range_psi = -log(0.1)/mu.sum();
   Type k_psi =   1 + exp(log_c_mmpp)*aveMMPP;
