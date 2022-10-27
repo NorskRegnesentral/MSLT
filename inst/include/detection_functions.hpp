@@ -33,3 +33,21 @@ Type eshw_half_normal(vector<Type> z, vector<Type> beta, Type w){
 
   return eshw;
 }
+
+// ------------ Hazard rate class ------------------------------
+
+template<class Type>
+Type g_hazard(Type y, vector<Type> z, vector<Type> beta, Type b){
+  Type sigma = exp((beta*z).sum());
+  Type g =  Type(1.0) - exp(-pow(y/sigma,-b));
+
+  return g;
+}
+
+template<class Type>
+Type eshw_hazard(vector<Type> z, vector<Type> beta, Type b){
+  Type sigma = exp((beta*z).sum());
+  Type eshw = exp(lgamma((b-1)/b))*sigma;
+
+  return eshw;
+}
