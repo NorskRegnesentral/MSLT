@@ -8,10 +8,12 @@ partable_model(run, CI_level = 0.95)
 }
 \arguments{
 \item{run}{run to extract model parameters from}
+
+\item{CI_level}{Confidence level to accompany the point estimates with}
 }
 \value{
 Table with model parameters
 }
 \description{
-...
+Return table with model parameters
 }
