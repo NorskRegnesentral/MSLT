@@ -56,9 +56,9 @@ jit = function(run, sd = 0.2, nojit = 50,ncores = 2){
   if(ncores>1){
     cl <- makeCluster(ncores) #set up nodes
     on.exit(stopCluster(cl)) #shut it down
-    lib.ver <- dirname(path.package("niseEst"))
+    lib.ver <- dirname(path.package("mslt"))
     clusterExport(cl, varlist=c("lib.ver","run"), envir=environment())
-    clusterEvalQ(cl, {library(niseEst, lib.loc=lib.ver)})
+    clusterEvalQ(cl, {library(mslt, lib.loc=lib.ver)})
     runs <- parLapply(cl, pars, function(p){
       rr = fitLGPP(run$data,  p,run$conf)
       FreeADFun(rr$obj)#Free memory from C-side
