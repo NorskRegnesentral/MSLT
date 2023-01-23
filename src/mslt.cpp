@@ -54,7 +54,7 @@ Type objective_function<Type>::operator() (){
   PARAMETER_VECTOR(beta_size); //covariates for group size
   PARAMETER_VECTOR(logB); //hazard
   PARAMETER_VECTOR(log_mu); // mu(1),mu(2) are swiching rates
-  PARAMETER(log_c_mmpp);      // lambda2/lambda1
+  PARAMETER(log_c_mmpp);      // lambda2/lambda1   IMPORTANT NOTE: DESPITE ITS NAME THIS IS NOT log(c), but rather log(c-1). Should change name
   PARAMETER_VECTOR(logSizeNB); //Size parameter in negative binomial pod size
 
   PARAMETER_VECTOR(x_intensity); //latent spatial effect intensity
@@ -181,15 +181,19 @@ Type objective_function<Type>::operator() (){
   }
   //---------------------------------------------
 
+  Type pi_1 = mu(1)/(mu(0)+mu(1));
+  Type pi_2 = mu(0)/(mu(0)+mu(1));
+  Type k_psi = pi_1 + c_mmpp*pi_2;
+  ADREPORT(k_psi);
+  
   //Penalize
   if(penalize(0)==1){
     nll -= dexp(c_mmpp,penalize(1),true);
   }
 
   //Abundance
-  Type aveMMPP = (1/mu(1))/(1/mu(0) + 1/mu(1)); //TODO, double check Hans
-  vector<Type> linPred =   exp(X_z_pred*beta_z + Apred*x_intensity) * (1 + exp(log_c_mmpp)*aveMMPP);
-
+  vector<Type> linPred =   exp(X_z_pred*beta_z + Apred*x_intensity) * k_psi;
+  
 
   //Size part
   Type sizeNB;
@@ -263,9 +267,7 @@ Type objective_function<Type>::operator() (){
   ADREPORT(abundance);
 
   Type range_psi = -log(0.1)/mu.sum();
-  Type k_psi =   1 + exp(log_c_mmpp)*aveMMPP;
   ADREPORT(range_psi);
-  ADREPORT(k_psi);
 
   if(applyPodSize==1){
     sizeNB = exp(logSizeNB(0));

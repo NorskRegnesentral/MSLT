@@ -31,9 +31,9 @@ partable_model<-function(run,CI_level=0.95){
   mu2 = c(exp(pl$log_mu[2]),
           exp(pl$log_mu[2] + qnorm(CI_L)*plSd$log_mu[2]),
           exp(pl$log_mu[2] + qnorm(CI_U)*plSd$log_mu[2]))
-  c_mmpp = c(exp(pl$log_c_mmpp),
-             exp(pl$log_c_mmpp + qnorm(CI_L)*plSd$log_c_mmpp),
-             exp(pl$log_c_mmpp + qnorm(CI_U)*plSd$log_c_mmpp))
+  c_mmpp = c(exp(pl$log_c_mmpp)+1,
+             exp(pl$log_c_mmpp + qnorm(CI_L)*plSd$log_c_mmpp)+1,
+             exp(pl$log_c_mmpp + qnorm(CI_U)*plSd$log_c_mmpp)+1)
   betaz = c(pl$beta_z[1],
             pl$beta_z[1] + qnorm(CI_L)*plSd$beta_z[1],
             pl$beta_z[1] + qnorm(CI_U)*plSd$beta_z[1])
