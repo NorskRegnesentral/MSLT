@@ -3,9 +3,7 @@
 #' @useDynLib mslt
 #' @export
 #' @examples
-fitLGPP = function(data,par,conf,rel.tol=1e-10,...){
-
-  map = setMap(conf, par);
+fitLGPP = function(data,par,conf,rel.tol=1e-10,map = setMap(conf, par),...){
 
   #Estimating the model and extract results-------------
   startTime <- Sys.time()
