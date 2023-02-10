@@ -197,7 +197,8 @@ setData = function(d,predAreaUTM, conf){
               applyPodSize = conf$applyPodSize,
               podSizeDist = conf$podSizeDist,
               independentPodSize = conf$independentPodSize,
-              detectionTrunc = conf$detectionTrunc
+              detectionTrunc = conf$detectionTrunc,
+              useMMPP = conf$mmpp[1]
   )
 
   attributes(data)$mesh = mesh

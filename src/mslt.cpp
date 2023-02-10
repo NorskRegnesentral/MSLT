@@ -46,7 +46,8 @@ Type objective_function<Type>::operator() (){
   DATA_INTEGER(applyPodSize); //1: Apply pod size
   DATA_INTEGER(podSizeDist); //1: poisson, 2: negative binomial
   DATA_INTEGER(independentPodSize); //1: pod size is independent of intensity
-
+  DATA_INTEGER(useMMPP); 
+  
   PARAMETER_VECTOR(log_sigma); //marginal standard deviation
   PARAMETER_VECTOR(log_kappa); //spatial scaling parameter
   PARAMETER_VECTOR(beta_g); //covariates for detection
@@ -113,6 +114,8 @@ Type objective_function<Type>::operator() (){
 
   //------ Log Gaussian Cox process ----------
 
+  Type transectIntensityTotoal = 0;
+  
   //Structure needed for effort constribution
   vector<Type> Z_transect =  X_z*beta_z+  AalongLines*x_intensity;
 
@@ -154,12 +157,14 @@ Type objective_function<Type>::operator() (){
       }
     }
 
-    // MMPP quantities
-    vector<Type> lambda(2);
-    lambda(0) = exp(Z_transect(i))*esw;  // Low Poisson rate
-    lambda(1) = c_mmpp*lambda(0);        // High Poisson rate
-
-    switch(code(i)){
+    
+    if(useMMPP==1){
+      // MMPP quantities
+      vector<Type> lambda(2);
+      lambda(0) = exp(Z_transect(i))*esw;  // Low Poisson rate
+      lambda(1) = c_mmpp*lambda(0);        // High Poisson rate
+      
+      switch(code(i)){
       case 0: // Initialize new transect leg
         P(0,0) = mu(1)/sum(mu);  // Eq. (3) in (2006)
         P(0,1) = mu(0)/sum(mu);  // Eq. (3) in (2006)
@@ -173,11 +178,26 @@ Type objective_function<Type>::operator() (){
         P(0,1) *= lambda(1);
         nll -= -log(esw);  // This is the normalizing constant that was skipped above in the detection function
         break;
+      }
+      if(code(i)!=0){
+        nll -= log(sum(P));
+        P = P/sum(P);  // Renormalize probability after event
+        transectIntensityTotoal += P(0,0)*exp(Z_transect(i))*lineIntegralDelta(i);
+        transectIntensityTotoal += P(0,1)*exp(Z_transect(i))*lineIntegralDelta(i)*c_mmpp;
+      }
+    }else{
+      if(code(i)>0){
+        Type lambda = exp(Z_transect(i))*esw;  // Low Poisson rate
+        nll -= -lambda*lineIntegralDelta(i);
+        transectIntensityTotoal += exp(Z_transect(i))*lineIntegralDelta(i);
+      }
+      if(code(i)==2){
+        nll -=Z_transect(i);
+      }
+      
     }
-    if(code(i)!=0){
-      nll -= log(sum(P));
-      P = P/sum(P);  // Renormalize probability after event
-    }
+    
+
   }
   //---------------------------------------------
 
@@ -185,7 +205,7 @@ Type objective_function<Type>::operator() (){
   Type pi_2 = mu(0)/(mu(0)+mu(1));
   Type k_psi = pi_1 + c_mmpp*pi_2;
   ADREPORT(k_psi);
-  
+  ADREPORT(transectIntensityTotoal)
   //Penalize
   if(penalize(0)==1){
     nll -= dexp(c_mmpp,penalize(1),true);
