@@ -88,7 +88,7 @@ partable_model<-function(run,CI_level=0.95){
 #' @param CI_level Confidence level to accompany the point estimates with
 #' @return Table with derived model parameters
 #' @export
-partable_model_derived <-function(run,sdreport_run,CI_level=0.95){
+partable_model_derived <-function(run,sdreport_run = NULL,CI_level=0.95){
 
   CI_L <- (1-CI_level)/2
   CI_U <- 1-CI_L
@@ -96,8 +96,14 @@ partable_model_derived <-function(run,sdreport_run,CI_level=0.95){
   map = run$map
   pl = as.list(run$rep,"Est")
   plSd = as.list(run$rep,"Std")
-  rlBiasCorr = as.list(sdreport_run,"Est. (bias.correct)", report = TRUE)
-  rlBiasCorrSd = as.list(sdreport_run,"Std. (bias.correct)", report = TRUE)
+  rl = as.list(run$rep,"Est", report = TRUE)
+  rlSd = as.list(run$rep,"Std", report = TRUE)
+  
+  if(!is.null(sdreport_run)){
+    rlBiasCorr = as.list(sdreport_run,"Est. (bias.correct)", report = TRUE)
+    rlBiasCorrSd = as.list(sdreport_run,"Std. (bias.correct)", report = TRUE)
+  }
+
 
 
   range_int = c(sqrt(8)/exp(pl$log_kappa[1]),
@@ -118,30 +124,35 @@ partable_model_derived <-function(run,sdreport_run,CI_level=0.95){
   half_stripe_widthG2 <- sqrt(2*pi*exp(betaG2))/2
   half_stripe_widthG3 <- sqrt(2*pi*exp(betaG3))/2
 
-  range_psi = c(rlBiasCorr$range_psi,
-                rlBiasCorr$range_psi + qnorm(CI_L)*rlBiasCorrSd$range_psi,
-                rlBiasCorr$range_psi + qnorm(CI_U)*rlBiasCorrSd$range_psi)
+  range_psi = c(rl$range_psi,
+                rl$range_psi + qnorm(CI_L)*rlSd$range_psi,
+                rl$range_psi + qnorm(CI_U)*rlSd$range_psi)
 
-  k_psi = c(rlBiasCorr$k_psi,
-                rlBiasCorr$k_psi + qnorm(CI_L)*rlBiasCorrSd$k_psi,
-                rlBiasCorr$k_psi + qnorm(CI_U)*rlBiasCorrSd$k_psi)
+  k_psi = c(rl$k_psi,
+            rl$k_psi + qnorm(CI_L)*rlSd$k_psi,
+            rl$k_psi + qnorm(CI_U)*rlSd$k_psi)
 
   range_size = c(sqrt(8)/exp(pl$log_kappa[2]),
                  sqrt(8)/exp(pl$log_kappa[2] + qnorm(CI_U)*plSd$log_kappa[2]), # CI_U here as we divide by kappa
                  sqrt(8)/exp(pl$log_kappa[2] + qnorm(CI_L)*plSd$log_kappa[2])) # CI_L here as we divide by kappa
 
-  meanGroupSize = c(rlBiasCorr$meanGroupSize,
-                rlBiasCorr$meanGroupSize + qnorm(CI_L)*rlBiasCorrSd$meanGroupSize,
-                rlBiasCorr$meanGroupSize + qnorm(CI_U)*rlBiasCorrSd$meanGroupSize)
+  meanGroupSize = c(rl$meanGroupSize,
+                    rl$meanGroupSize + qnorm(CI_L)*rlSd$meanGroupSize,
+                    rl$meanGroupSize + qnorm(CI_U)*rlSd$meanGroupSize)
 
 
-  abundance = c(exp(rlBiasCorr$logAbundance),
-                exp(rlBiasCorr$logAbundance + qnorm(CI_L)*rlBiasCorrSd$logAbundance),
-                exp(rlBiasCorr$logAbundance + qnorm(CI_U)*rlBiasCorrSd$logAbundance))
+  abundance = c(exp(rl$logAbundance),
+                exp(rl$logAbundance + qnorm(CI_L)*rlSd$logAbundance),
+                exp(rl$logAbundance + qnorm(CI_U)*rlSd$logAbundance))
 
-
-
-  parTab = rbind(range_int,half_stripe_widthG1,half_stripe_widthG2,half_stripe_widthG3,range_psi,k_psi,range_size,meanGroupSize,abundance)
+  if(!is.null(sdreport_run)){
+    abundanceBiasCorrected = c(exp(rlBiasCorr$logAbundance),
+                  exp(rlBiasCorr$logAbundance + qnorm(CI_L)*rlBiasCorrSd$logAbundance),
+                  exp(rlBiasCorr$logAbundance + qnorm(CI_U)*rlBiasCorrSd$logAbundance))
+  }else{
+    abundanceBiasCorrected = c(NA,NA,NA)
+  }
+  parTab = rbind(range_int,half_stripe_widthG1,half_stripe_widthG2,half_stripe_widthG3,range_psi,k_psi,range_size,meanGroupSize,abundance,abundanceBiasCorrected)
   parTab <- as.data.frame(parTab)
   colnames(parTab) <- c("Est","CI_L","CI_U")
 
