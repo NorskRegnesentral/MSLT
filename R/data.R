@@ -106,12 +106,6 @@ setData = function(d,predAreaUTM, conf){
     }
   }
 
-  #Krill kovariate, to remove
-  d$krillFactor = rep(0,length(d$krill))
-  d$krillFactor[d$krill < quantile(d$krill,0.90) &d$krill>0 ] = 1
-  d$krillFactor[d$krill >= quantile(d$krill,0.90)] = 2
-
-
   #Accomondate for observer sides
   d$abortLeft = rep(0,dim(d)[1])
   d$abortRight = rep(0,dim(d)[1])
@@ -123,8 +117,7 @@ setData = function(d,predAreaUTM, conf){
   predPoints = sp::spsample(predAreaUTM,n = conf$nPredPoints , type = "regular",offset = 0.5) #Offset is otherwise random (shifts the grid)
   meshPoints = rbind(predPoints@coords,data.frame(x1 = d$utmx,x2 = d$utmy))
   predData = data.frame(predPoints@coords)
-  predData =cbind(predData, as.factor(sample(d$krillFactor,dim(predData)[1])))
-  names(predData) = c("utmx", "utmy", "krillFactor")
+  names(predData) = c("utmx", "utmy")
 
 
   #Define mesh
@@ -205,9 +198,7 @@ setData = function(d,predAreaUTM, conf){
   attributes(data)$obsUTM = obsUTM
   attributes(data)$obsLatLon = obsLatLon
   attributes(data)$predData = predData
-  attributes(data)$krill = d$krill
   attributes(data)$detectionCov = colnames(X_g_right)
-
 
   return(data)
 }
