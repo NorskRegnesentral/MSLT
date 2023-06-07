@@ -4,7 +4,7 @@
 \alias{partable_model_derived}
 \title{Return table with derived model parameters}
 \usage{
-partable_model_derived(run, sdreport_run, CI_level = 0.95)
+partable_model_derived(run, sdreport_run = NULL, CI_level = 0.95)
 }
 \arguments{
 \item{run}{run to extract model parameters from}
