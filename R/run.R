@@ -7,8 +7,11 @@ fitLGPP = function(data,par,conf,rel.tol=1e-10,map = setMap(conf, par),...){
 
   #Estimating the model and extract results-------------
   startTime <- Sys.time()
-  obj <- MakeADFun(data, par, random=c("x_intensity","x_size"), DLL="mslt", map = map)
-
+  if(conf$mmpp==1){
+    obj <- MakeADFun(data, par, random=c("x_intensity","x_size"), profile = c("log_c_mmpp"),DLL="mslt", map = map)	
+  }else{
+    obj <- MakeADFun(data, par, random=c("x_intensity","x_size"),DLL="mslt", map = map)	
+  }
   lower = list()
   lower$log_c_mmpp = -10#NB, set lower boundary on jump in MMPP
 
