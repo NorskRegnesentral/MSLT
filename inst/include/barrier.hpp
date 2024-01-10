@@ -20,7 +20,6 @@ SparseMatrix<Type> Q_spde(spde_barrier_t<Type> spde, Type kappa, vector<Type> c)
   vector <Type> range(2);
   range(0) = sqrt(8)/kappa*c(0);
   range(1) = range(0)*c(1);
-  Type pi = 3.141592;
 
   int dimLatent = spde.D0.row(0).size();
   vector<Type> Cdiag(dimLatent);
@@ -34,7 +33,7 @@ SparseMatrix<Type> Q_spde(spde_barrier_t<Type> spde, Type kappa, vector<Type> c)
   SparseMatrix<Type >A = spde.I;
   A = A + (pow(range(0),2)/8) * spde.D0 + (pow(range(1),2)/8) * spde.D1;
 
-  Eigen::SparseMatrix<Type> Q = A.transpose() * Cinv * A/pi *2 * 3;
+  Eigen::SparseMatrix<Type> Q = A.transpose() * Cinv * A/M_PI *2 * 3;
 
   return Q;
 }
