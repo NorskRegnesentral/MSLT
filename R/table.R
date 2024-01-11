@@ -124,9 +124,10 @@ partable_model_derived <-function(run,sdreport_run = NULL,CI_level=0.95){
   half_stripe_widthG2 <- sqrt(2*pi*exp(betaG2))/2
   half_stripe_widthG3 <- sqrt(2*pi*exp(betaG3))/2
 
-  range_psi = c(rl$range_psi,
-                rl$range_psi + qnorm(CI_L)*rlSd$range_psi,
-                rl$range_psi + qnorm(CI_U)*rlSd$range_psi)
+  range_psi = c(exp(rl$log_range_psi), 
+                exp(rl$log_range_psi+ qnorm(CI_L)*rlSd$log_range_psi),
+                exp(rl$log_range_psi+ qnorm(CI_U)*rlSd$log_range_psi))
+
 
   k_psi = c(rl$k_psi,
             rl$k_psi + qnorm(CI_L)*rlSd$k_psi,

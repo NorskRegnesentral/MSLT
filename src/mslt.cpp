@@ -279,8 +279,8 @@ Type objective_function<Type>::operator() (){
   Type logAbundance = log(abundance);
   ADREPORT(logAbundance);
 
-  Type range_psi = -log(0.1)/mu.sum();
-  ADREPORT(range_psi);
+  Type log_range_psi = log(-log(0.1)/mu.sum());
+  ADREPORT(log_range_psi);
 
   if(applyPodSize==1){
     sizeNB = exp(logSizeNB(0));
