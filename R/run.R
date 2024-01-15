@@ -1,6 +1,12 @@
-#' @param
-#' @return fitted model
-#' @useDynLib mslt
+#' Fit the LGPP model
+#' @description Fit the LGPP model
+#' @param data data needed
+#' @param par data needed
+#' @param conf data needed
+#' @param rel.tol data needed
+#' @param map data needed
+#' @param ... sent to sdreport
+#' @return fitted LGPP model
 #' @export
 #' @examples
 fitLGPP = function(data,par,conf,rel.tol=1e-10,map = setMap(conf, par),...){
@@ -8,9 +14,9 @@ fitLGPP = function(data,par,conf,rel.tol=1e-10,map = setMap(conf, par),...){
   #Estimating the model and extract results-------------
   startTime <- Sys.time()
   if(conf$mmpp==1){
-    obj <- MakeADFun(data, par, random=c("x_intensity","x_size"), profile = c("log_c_mmpp"),DLL="mslt", map = map)	
+    obj <- RTMB::MakeADFun(mslt, par, random=c("x_intensity","x_size"), profile = c("log_c_mmpp"), map = map)	
   }else{
-    obj <- MakeADFun(data, par, random=c("x_intensity","x_size"),DLL="mslt", map = map)	
+    obj <- RTMB::MakeADFun(mslt, par, random=c("x_intensity","x_size"), map = map)	
   }
   lower = list()
   lower$log_c_mmpp = -10#NB, set lower boundary on jump in MMPP
@@ -47,9 +53,6 @@ jit = function(run, sd = 0.2, nojit = 50,ncores = 2){
   parv <- unlist(par)
   parsTmp <- lapply(1:nojit, function(i)relist(parv+rnorm(length(parv),sd=sd), par))
   pars =  lapply(parsTmp, function(p){
-    scale =1/((4*3.14159265)*exp(p$log_kappa)*exp(p$log_kappa))
-    p$x_intensity = p$x_intensity*sqrt(scale[1])
-    p$x_size = p$x_size*sqrt(scale[2])
     p
   })
 
@@ -77,9 +80,4 @@ jit = function(run, sd = 0.2, nojit = 50,ncores = 2){
 
   return(runs)
 }
-
-
-
-
-
 
