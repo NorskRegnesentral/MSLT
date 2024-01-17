@@ -61,10 +61,10 @@ eshw_hazard = function(z, beta, b,w){
   
   if(w>0){
     eshw = exp(lgamma((b-1)/b))*sigma;
- #   dTrunc = (0.5*w)/20
- #   truncHelper = seq(w + dTrunc/2, w*1.5 + dTrunc/2, by = dTrunc)
- #   truncSub = sum(g_hazard(truncHelper,z,beta,b)*dTrunc)
- #   eshw = eshw- truncSub
+    dTrunc = (0.5*w)/20
+    truncHelper = seq(w + dTrunc/2, w*1.5 + dTrunc/2, by = dTrunc)
+    truncSub = sum(g_hazard(truncHelper,z,beta,b)*dTrunc)
+    eshw = eshw- truncSub
   }else{
     eshw = exp(lgamma((b-1)/b))*sigma;
   }
