@@ -114,25 +114,21 @@ setData = function(d,predAreaUTM, conf){
 
 
   #Define aundance integration points
-  predPoints = sp::spsample(predAreaUTM,n = conf$nPredPoints , type = "regular",offset = 0.5) #Offset is otherwise random (shifts the grid)
-  meshPoints = rbind(predPoints@coords,data.frame(x1 = d$utmx,x2 = d$utmy))
-  predData = data.frame(predPoints@coords)
+  points = sp::makegrid(predAreaUTM,cellsize = conf$cellsize)
+  pointsSP = sp::SpatialPoints(points,conf$UTMproj)
+  inside = rep(1,dim(pointsSP@coords)[1])
+  inside[which(is.na(over(pointsSP,predAreaUTM)))] = 0 
+  predData = points[which(inside==1),]
   names(predData) = c("utmx", "utmy")
-
-
+  
   #Define mesh
-  #Make 300km buffer polygon around full stratum
   full.buffer <- rgeos::gBuffer(predAreaUTM, width=100, joinStyle='ROUND')
   boundary <- as.inla.mesh.segment(full.buffer)
 
-  mesh <- inla.mesh.2d(meshPoints,
+  mesh <- inla.mesh.2d(predData,
                        max.edge = conf$spdeDetails$max.edge ,
                        cutoff = conf$spdeDetails$cutoff,offset = c(1,-0.1),
                        boundary=boundary)
-
-  plot(mesh)
-  mesh$n
-
 
 
   #Set up regression coefficients
@@ -160,7 +156,6 @@ setData = function(d,predAreaUTM, conf){
   spdeMatrices = spde$param.inla[c("M0","M1","M2")]
 
   AObs = inla.spde.make.A(mesh,obsUTM[d$code==2,])
-
 
   data = list(AalongLines = AalongLines,
               Apred = Apred,

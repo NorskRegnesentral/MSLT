@@ -8,8 +8,8 @@ defConf = function(d = NULL,detectionTrunc = -1){
   conf$mmpp = 1 #apply MMPP
   conf$matern_intensity = 1 #apply spatial effect intensity
   conf$matern_size = 1 #apply spatial effect size
-  conf$g_function = 1 #1: Normal, 2:
-  conf$UTMproj = CRS("+proj=utm +zone=21 +units=km")
+  conf$g_function = 1 #1: Normal, 2: Hazard
+  conf$UTMproj = CRS("+proj=utm +zone=22 +units=km")
   conf$LatLonProj =  CRS("+proj=longlat +datum=WGS84")
 
   conf$covRate =  ""
@@ -34,7 +34,8 @@ defConf = function(d = NULL,detectionTrunc = -1){
   conf$dependentPodSize = c(0,1) #First if beta0 is included and second if beta_SPDE is included
   conf$detectionTrunc = detectionTrunc #No truncation if negative
 
-  conf$nPredPoints = 5000
+  conf$cellsize = 20
+  
   return(conf)
 }
 
