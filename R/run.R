@@ -20,7 +20,9 @@ fitLGPP = function(data,par,conf,rel.tol=1e-10,map = setMap(conf, par),...){
     rep = sdreport(obj, ...)
     pl = as.list(rep,"Est")
     plSd = as.list(rep,"Std")
-    list(obj = obj, opt = opt,rep = rep, map = map, conf = conf, data = data,pl = pl, plSd = plSd)},
+    rl = as.list(rep, what = "Est", report = TRUE)
+    rlSd = as.list(rep, what = "Std", report = TRUE)
+    list(obj = obj, opt = opt,rep = rep, map = map, conf = conf, data = data,pl = pl, plSd = plSd, rl = rl, rlSd = rlSd)},
   error=function(cond) {
     print("NB!!! Optization failed!")
     NA
