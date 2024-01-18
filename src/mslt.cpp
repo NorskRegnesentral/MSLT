@@ -146,10 +146,10 @@ Type objective_function<Type>::operator() (){
         break;
       case 2:
         if(abortLeft(i)==0){
-          esw = eshw_hazard(tmp_left,beta_g, bHazard);
+          esw = eshw_hazard(tmp_left,beta_g, bHazard, detectionTrunc);
         }
         if(abortRight(i)==0){
-          esw +=   eshw_hazard(tmp_right,beta_g, bHazard);
+          esw +=   eshw_hazard(tmp_right,beta_g, bHazard, detectionTrunc);
         }
         break;
       }

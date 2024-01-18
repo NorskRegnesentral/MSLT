@@ -43,9 +43,20 @@ Type g_hazard(Type y, vector<Type> z, vector<Type> beta, Type b){
 }
 
 template<class Type>
-Type eshw_hazard(vector<Type> z, vector<Type> beta, Type b){
+Type eshw_hazard(vector<Type> z, vector<Type> beta, Type b, Type w){
   Type sigma = exp((beta*z).sum());
+  
   Type eshw = exp(lgamma((b-1)/b))*sigma;
-
+  if(w>0){
+    int nn = 20;
+    Type dTrunc = (0.5*w)/nn;
+    for(int i=0; i<nn; ++i){
+      eshw -= g_hazard(w + (i+0.5)*dTrunc,z,beta,b)*dTrunc;
+    }
+  }
   return eshw;
 }
+
+
+
+
