@@ -47,7 +47,12 @@ partable_model<-function(run,CI_level=0.95){
              pl$beta_g[3] + qnorm(CI_L)*plSd$beta_g[3],
              pl$beta_g[3] + qnorm(CI_U)*plSd$beta_g[3])
 
-  #  B = round(c(pl$logB, pl$logB - 2*plSd$logB,pl$logB + 2*plSd$logB ),2)
+  if(run$conf$g_function==2){
+    b = exp(c(pl$logB, 
+              pl$logB + qnorm(CI_L)*plSd$logB,
+              pl$logB + qnorm(CI_U)*plSd$logB ))
+  }
+    
   beta0_size = c(pl$beta_size[1],
                  pl$beta_size[1] + qnorm(CI_L)*plSd$beta_size[1],
                  pl$beta_size[1] + qnorm(CI_U)*plSd$beta_size[1])
@@ -58,7 +63,7 @@ partable_model<-function(run,CI_level=0.95){
                 pl$logSizeNB + qnorm(CI_L)*plSd$logSizeNB,
                 pl$logSizeNB + qnorm(CI_U)*plSd$logSizeNB))
 
-  parTab = rbind(sigma_int,kappa_int,mu1,mu2,c_mmpp,betaz,betaG1,betaG2,betaG3,sigma_size,kappa_size,beta0_size,beta1_size,SizeNB)
+  parTab = rbind(sigma_int,kappa_int,mu1,mu2,c_mmpp,betaz,betaG1,betaG2,betaG3,b,sigma_size,kappa_size,beta0_size,beta1_size,SizeNB)
   parTab <- as.data.frame(parTab)
   colnames(parTab) <- c("Est","CI_L","CI_U")
 
@@ -153,6 +158,7 @@ partable_model_derived <-function(run,sdreport_run = NULL,CI_level=0.95){
   }else{
     abundanceBiasCorrected = c(NA,NA,NA)
   }
+
   parTab = rbind(range_int,half_stripe_widthG1,half_stripe_widthG2,half_stripe_widthG3,range_psi,k_psi,range_size,meanGroupSize,abundance,abundanceBiasCorrected)
   parTab <- as.data.frame(parTab)
   colnames(parTab) <- c("Est","CI_L","CI_U")
@@ -167,6 +173,7 @@ partable_model_derived <-function(run,sdreport_run = NULL,CI_level=0.95){
     parTab[rownames(parTab)=="k_psi",] = NA
   }
 
+  
 
   return(parTab)
 }
