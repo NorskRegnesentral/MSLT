@@ -207,12 +207,10 @@ Type objective_function<Type>::operator() (){
 
   //Abundance
   vector<Type> linPred =   exp(X_z_pred*beta_z + Apred*x_intensity) * k_psi;
-  
 
   //Size part
   Type sizeNB;
   Type varNB;
-
 
   if(applyPodSize==1){
 
@@ -272,9 +270,22 @@ Type objective_function<Type>::operator() (){
 
       }
     }
+    //Bias correct figure in paper
+    vector<Type> linPredFigure =   exp(X_z_pred*beta_z + x_intensity) * k_psi;
+    vector<Type> linPredFigureSize =  exp(beta_size(0) + x_size);
+    for(int i = 0; i< linPredFigure.size(); ++i){
+      sizeNB = exp(logSizeNB(0));
+      varNB = linPredFigureSize(i) + linPredFigureSize(i)*linPredFigureSize(i)/sizeNB;
+      linPredFigure(i) = linPredFigure(i)*(linPredFigureSize(i)/(1-dnbinom2(Type(0), linPredFigureSize(i), varNB)));
+    }
+ //   ADREPORT(linPredFigure); //Needed when producing spatial bias corrected plots in paper, removed because requires a couple of minutes computation time
   }
 
+  
 
+  
+  
+  
   Type abundance = area*linPred.sum()/linPred.size();
   Type logAbundance = log(abundance);
   ADREPORT(logAbundance);
@@ -290,6 +301,21 @@ Type objective_function<Type>::operator() (){
     ADREPORT(meanGroupSize);
   }
 
+  
+  //Adreport esw 
+  vector<Type> logEswReport(beta_g.size());
+  for(int i =0; i<beta_g.size(); ++i){
+    vector<Type> tmp(beta_g.size());
+    tmp.setZero();
+    tmp(i)=1;
+    if(g_function==1){
+      logEswReport(i) = log(eshw_half_normal(tmp,beta_g, detectionTrunc));
+    }else if(g_function ==2){
+      logEswReport(i) =   log(eshw_hazard(tmp,beta_g, bHazard, detectionTrunc));
+    }
+  }
+  ADREPORT(logEswReport);
+  
 
   return nll;
 }
