@@ -16,15 +16,15 @@ partable_model<-function(run,CI_level=0.95){
   sigma_int = c(exp(pl$log_sigma[1]),
                 exp(pl$log_sigma[1] + qnorm(CI_L)*plSd$log_sigma[1]),
                 exp(pl$log_sigma[1] + qnorm(CI_U)*plSd$log_sigma[1]))
-  kappa_int = c(exp(pl$log_kappa[1]),
-                exp(pl$log_kappa[1] + qnorm(CI_L)*plSd$log_kappa[1]),
-                exp(pl$log_kappa[1] + qnorm(CI_U)*plSd$log_kappa[1]))
+  log_kappa_int = c(pl$log_kappa[1],
+                pl$log_kappa[1] + qnorm(CI_L)*plSd$log_kappa[1],
+                pl$log_kappa[1] + qnorm(CI_U)*plSd$log_kappa[1])
   sigma_size = c(exp(pl$log_sigma[2]),
                  exp(pl$log_sigma[2] + qnorm(CI_L)*plSd$log_sigma[2]),
                  exp(pl$log_sigma[2] + qnorm(CI_U)*plSd$log_sigma[2]))
-  kappa_size = c(exp(pl$log_kappa[2]),
-                 exp(pl$log_kappa[2] + qnorm(CI_L)*plSd$log_kappa[2]),
-                 exp(pl$log_kappa[2] + qnorm(CI_U)*plSd$log_kappa[2]))
+  log_kappa_size = c(pl$log_kappa[2],
+                 pl$log_kappa[2] + qnorm(CI_L)*plSd$log_kappa[2],
+                 pl$log_kappa[2] + qnorm(CI_U)*plSd$log_kappa[2])
   mu1 = c(exp(pl$log_mu[1]),
           exp(pl$log_mu[1] + qnorm(CI_L)*plSd$log_mu[1]),
           exp(pl$log_mu[1] + qnorm(CI_U)*plSd$log_mu[1]))
@@ -59,18 +59,18 @@ partable_model<-function(run,CI_level=0.95){
   beta1_size = c(pl$beta_size[2],
                  pl$beta_size[2] + qnorm(CI_L)*plSd$beta_size[2],
                  pl$beta_size[2] + qnorm(CI_U)*plSd$beta_size[2])
-  SizeNB = exp(c(pl$logSizeNB,
+  log_size_NB = c(pl$logSizeNB,
                 pl$logSizeNB + qnorm(CI_L)*plSd$logSizeNB,
-                pl$logSizeNB + qnorm(CI_U)*plSd$logSizeNB))
+                pl$logSizeNB + qnorm(CI_U)*plSd$logSizeNB)
 
-  parTab = rbind(sigma_int,kappa_int,mu1,mu2,c_mmpp,betaz,betaG1,betaG2,betaG3,b,sigma_size,kappa_size,beta0_size,beta1_size,SizeNB)
+  parTab = rbind(sigma_int,log_kappa_int,mu1,mu2,c_mmpp,betaz,betaG1,betaG2,betaG3,b,sigma_size,log_kappa_size,beta0_size,beta1_size,log_size_NB)
   parTab <- as.data.frame(parTab)
   colnames(parTab) <- c("Est","CI_L","CI_U")
 
   # Setting estimates to NA if not estimated
   if(!is.null(map$x)){
     parTab[rownames(parTab)=="sigma_int",] = NA
-    parTab[rownames(parTab)=="kappa_int",] = NA
+    parTab[rownames(parTab)=="log_kappa_int",] = NA
   }
   if(!is.null(map$log_mu)){
     parTab[rownames(parTab)=="mu1",] = NA
@@ -79,7 +79,7 @@ partable_model<-function(run,CI_level=0.95){
   }
   if(is.na(map$log_sigma[1])){
     parTab[rownames(parTab)=="sigma_int",] = NA
-    parTab[rownames(parTab)=="kappa_int",] = NA
+    parTab[rownames(parTab)=="log_kappa_int",] = NA
   }
 
   return(parTab)
