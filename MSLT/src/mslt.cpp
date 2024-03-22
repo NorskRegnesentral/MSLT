@@ -278,7 +278,7 @@ Type objective_function<Type>::operator() (){
       varNB = linPredFigureSize(i) + linPredFigureSize(i)*linPredFigureSize(i)/sizeNB;
       linPredFigure(i) = linPredFigure(i)*(linPredFigureSize(i)/(1-dnbinom2(Type(0), linPredFigureSize(i), varNB)));
     }
- //   ADREPORT(linPredFigure); //Needed when producing spatial bias corrected plots in paper, removed because requires a couple of minutes computation time
+    ADREPORT(linPredFigure); //Needed when producing spatial bias corrected plots in paper, removed because requires a couple of minutes computation time
   }
 
   
