@@ -1,26 +1,3 @@
-#' readArea
-#' @description ...
-#' @param file Path to file with correct format
-#' @return area of interest
-#' @export
-#' @examples
-readArea = function(conf,file = NULL){
-
-  #TODO, how shall the user provide the area of interest?
-  strata <- rgdal::readOGR('inst/extdata/survey_strata.geojson', verbose=F)
-  strata <- strata[unlist(lapply(c('SS', 'AP', 'ESS'), function(x) match(x, strata$stratum))),]
-  full.stratum <- rgeos::gUnion(rgeos::gUnion(strata[which(strata$stratum=='SS'),], strata[which(strata$stratum=='AP'),]), strata[which(strata$stratum=='ESS'),])
-  utm.strata <- spTransform(strata, conf$UTMproj)
-  utm.full.stratum <- spTransform(full.stratum, conf$UTMproj)
-
-  predAreaUTM = utm.full.stratum
-
-  return(predAreaUTM)
-}
-
-
-
-
 #' setData
 #' @description Define data used internally based on data porvided and configuration file
 #' @param d Raw data
