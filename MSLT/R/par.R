@@ -1,7 +1,9 @@
-#' @param
-#' @return Configurations
+#' setPar
+#' 
+#' @param data data list returned by \code{\link{setData}}
+#' @param conf configuration list returned by \code{\link{defConf}}
+#' @return Initial model parameters
 #' @export
-#' @examples
 setPar = function(data,conf){
   par = list(log_sigma =c(0.5,0.5),
              log_kappa = c(-5,-5),

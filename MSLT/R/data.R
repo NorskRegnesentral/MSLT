@@ -1,11 +1,10 @@
 #' setData
 #' @description Define data used internally based on data porvided and configuration file
-#' @param d Raw data
-#' @param predAreaUTM prediciton area
-#' @param conf configuration applied
-#' @return data used internally in package
+#' @param d Data provided by user
+#' @param predAreaUTM prediction area provided by user
+#' @param conf model configurations list  returned by \code{\link{defConf}}
+#' @return data list used by TMB
 #' @export
-#' @examples
 setData = function(d,predAreaUTM, conf){
 
   if(conf$detectionTrunc>0){
@@ -36,7 +35,6 @@ setData = function(d,predAreaUTM, conf){
   d$abortLeft[is.na(d$Port)] =1
   d$abortRight[is.na(d$Stbd)] =1
 
-
   #Define aundance integration points
   points = sp::makegrid(predAreaUTM,cellsize = conf$cellsize)
   pointsSP = sp::SpatialPoints(points,conf$UTMproj)
@@ -54,7 +52,6 @@ setData = function(d,predAreaUTM, conf){
                        cutoff = conf$spdeDetails$cutoff,offset = c(1,-0.1),
                        boundary=boundary)
 
-
   #Set up regression coefficients
   if(conf$covDetection== "vessel"){
     X_g_obs = gam(lon ~  -1 + vessel  , data = d[which(d$code==2),],fit =FALSE)$X
@@ -70,8 +67,6 @@ setData = function(d,predAreaUTM, conf){
   #Set up regression coefficients for rate
   X_z = gam(lon ~  1  , data = d,fit =FALSE)$X
   X_z_pred = gam(utmx ~  1 , data = predData,fit =FALSE)$X
-
-
 
   #matrices needed in the SPDE procedure
   AalongLines = inla.spde.make.A(mesh,integrationPointsUTM)
@@ -118,7 +113,6 @@ setData = function(d,predAreaUTM, conf){
   attributes(data)$obsLatLon = obsLatLon
   attributes(data)$predData = predData
   attributes(data)$detectionCov = colnames(X_g_right)
-
   return(data)
 }
 

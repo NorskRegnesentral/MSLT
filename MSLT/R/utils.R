@@ -1,30 +1,34 @@
-## used by stats::AIC()
+##' logLik.mslt 
 ##'
-##' @param object
-##' @details
+##' @param object fitted model retuned by \code{\link{fitMSLT}} 
+##' @details Returns the log-likelihood and the number of parameters 
 ##' @export
-logLik.lineTransectLGPP<-function(object, ...){
+logLik.mslt<-function(object, ...){
   ret<- -object$opt$objective
 
-  attr(ret,"df")<-length(object$opt$par)
+  mmppProfiled = 0
+  if(object$conf$mmpp==1)mmppProfiled = 1
+  
+  attr(ret,"df")<-length(object$opt$par) + mmppProfiled
   class(ret)<-"logLik"
   ret
 }
 
 
-##' Print lineTransectLGPP object
-##' @method print lineTransectLGPP
-##' @param  x
+##' Print mslt object
+##' 
+##' @param  x fitted model retuned by \code{\link{fitMSLT}} to print
 ##' @details Print log-likelihood and the main convergence criteria
 ##' @export
-print.lineTransectLGPP<-function(x, ...){
-  cat("lineTransectLGPP model: log likelihood is", logLik.lineTransectLGPP(x,...),"Convergence", ifelse(0==x$opt$convergence, "OK\n", "failed\n"))
+print.mslt<-function(x, ...){
+  cat("mslt model: log likelihood is", logLik.mslt(x,...),"Convergence", ifelse(0==x$opt$convergence, "OK\n", "failed\n"))
 }
 
 
 ##' Print jit
+##' 
 ##' @method print jit
-##' @param  jj
+##' @param  jit list with the jitter runs
 ##' @details Print jit
 ##' @export
 print.jit<-function(jit,...){

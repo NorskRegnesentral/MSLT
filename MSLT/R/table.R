@@ -1,6 +1,6 @@
 #' Return table with model parameters
 #' 
-#' @param run run to extract model parameters from
+#' @param run run returned by \code{\link{fitMSLT}} run to extract model parameters from
 #' @param CI_level Confidence level to accompany the point estimates with
 #' @return Table with model parameters
 #' @export
@@ -16,8 +16,8 @@ partable<-function(run,CI_level=0.95){
   log_kappa_int = c(pl$log_kappa[1], pl$log_kappa[1] + qq*plSd$log_kappa[1])
   sigma_size = exp(c(pl$log_sigma[2], pl$log_sigma[2] + qq*plSd$log_sigma[2]))
   log_kappa_size = c(pl$log_kappa[2], pl$log_kappa[2] + qq*plSd$log_kappa[2])
-  mu1 = exp(c(pl$log_mu[1], pl$log_mu[1] + qq*plSd$log_mu[1]))
-  mu2 = exp(c(pl$log_mu[2], pl$log_mu[2] + qq*plSd$log_mu[2]))
+  log_mu1 = c(pl$log_mu[1], pl$log_mu[1] + qq*plSd$log_mu[1])
+  log_mu2 = c(pl$log_mu[2], pl$log_mu[2] + qq*plSd$log_mu[2])
   c_mmpp = c(exp(pl$log_c_mmpp)+1, exp(pl$log_c_mmpp +  qq*plSd$log_c_mmpp)+1)
   betaz = c(pl$beta_z[1], pl$beta_z[1] +  qq*plSd$beta_z[1])
   
@@ -36,7 +36,7 @@ partable<-function(run,CI_level=0.95){
   beta1_size = c(pl$beta_size[2],pl$beta_size[2] + qq*plSd$beta_size[2])
   log_size_NB = c(pl$logSizeNB,pl$logSizeNB + qq*plSd$logSizeNB)
   
-  parTabTmp = rbind(sigma_int,log_kappa_int,mu1,mu2,c_mmpp,betaz)
+  parTabTmp = rbind(sigma_int,log_kappa_int,log_mu1,log_mu2,c_mmpp,betaz)
   parTab = rbind(parTabTmp,do.call(rbind,betaG))
   rownames(parTab) = c(rownames(parTabTmp),paste0("betaG",1:length(pl$beta_g)))
   parTab = rbind(parTab,b,sigma_size,log_kappa_size,beta0_size,beta1_size,log_size_NB)
@@ -49,8 +49,8 @@ partable<-function(run,CI_level=0.95){
     parTab[rownames(parTab)=="log_kappa_int",] = NA
   }
   if(!is.null(run$map$log_mu)){
-    parTab[rownames(parTab)=="mu1",] = NA
-    parTab[rownames(parTab)=="mu2",] = NA
+    parTab[rownames(parTab)=="log_mu1",] = NA
+    parTab[rownames(parTab)=="log_mu2",] = NA
     parTab[rownames(parTab)=="c_mmpp",] = NA
   }
   if(is.na(run$map$log_sigma[1])){
@@ -64,7 +64,7 @@ partable<-function(run,CI_level=0.95){
 
 #' Return table with derived model parameters
 #' 
-#' @param run run to extract model parameters from
+#' @param run run returned by \code{\link{fitMSLT}} to extract model parameters from
 #' @param sdrep_bc the biascorrected sdreport object for the run to extract model parameters from
 #' @param CI_level Confidence level to accompany the point estimates with
 #' @return Table with derived model parameters
@@ -110,15 +110,5 @@ partable_derived <-function(run,sdrep_bc = NULL,CI_level=0.95){
     parTab[rownames(parTab)=="k_psi",] = NA
   }
   return(parTab)
-}
-
-
-
-##' Print abundance
-##' @param  run
-##' @details Print abundance
-##' @export
-logAbundance = function(run){
-  rl = as.list(run$rep,"Est",report = TRUE)$logAbundance
 }
 

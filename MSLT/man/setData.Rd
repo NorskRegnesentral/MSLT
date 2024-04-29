@@ -7,14 +7,14 @@
 setData(d, predAreaUTM, conf)
 }
 \arguments{
-\item{d}{Raw data}
+\item{d}{Data provided by user}
 
-\item{predAreaUTM}{prediciton area}
+\item{predAreaUTM}{prediction area provided by user}
 
-\item{conf}{configuration applied}
+\item{conf}{model configurations list  returned by \code{\link{defConf}}}
 }
 \value{
-data used internally in package
+data list used by TMB
 }
 \description{
 Define data used internally based on data porvided and configuration file

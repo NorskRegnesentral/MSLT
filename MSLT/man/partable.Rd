@@ -7,7 +7,7 @@
 partable(run, CI_level = 0.95)
 }
 \arguments{
-\item{run}{run to extract model parameters from}
+\item{run}{run returned by \code{\link{fitMSLT}} run to extract model parameters from}
 
 \item{CI_level}{Confidence level to accompany the point estimates with}
 }

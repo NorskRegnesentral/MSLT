@@ -7,7 +7,7 @@
 \method{print}{jit}(jit, ...)
 }
 \arguments{
-\item{jj}{}
+\item{jit}{list with the jitter runs}
 }
 \description{
 Print jit

@@ -1,56 +1,86 @@
-#' @param
-#' @return Configurations
+#' defConf
+#' 
+#' @param matern_intensity 1: include spatial effect in group abundance intensity, 0: not 
+#' @param mmpp  1: include MMPP in group abundance intensity, 0:not
+#' @param detectionTrunc Distance at which detection is truncated
+#' @param matern_size 1: include spatial effect in group size, 0: not
+#' @param g_function 1: Half normal detection function, 2: Hazard detection function
+#' @param covRate Covariates in group abundance intensity
+#' @param covDetection Covariates in detection function
+#' @param usePCpriors Use pc-priors (penalty) for spatial effect model parameters
+#' @param pcPriorsRange_intensity pc-prior group abundance intensity range
+#' @param pcPriorsSD_intensity pc-prior group abundance intensity marginal standard deviation
+#' @param pcPriorsRange_size pc-prior group size intensity range
+#' @param pcPriorsSD_size pc-prior group size intensity marginal standard deviation
+#' @param spdeDetails Details for constructing mesh with use of INLA
+#' @param applyPodSize 1: Pod size is included, 0: Not included
+#' @param podSizeDist 1:poisson, 2:negative binomial group size
+#' @param independentPodSize 1: Size independent of intensity
+#' @param dependentPodSize First if beta0 is included and second if beta_SPDE is included
+#' @param cellsize Distance between spatial quadratic integration points for total abundance 
+#' @param UTMproj CRS-UTM projection
+#' @param LatLonProj CRS-latitude and longitude projection
+#' @return Configurations 
 #' @export
-#' @examples
-defConf = function(d = NULL,detectionTrunc = -1){
+defConf = function(matern_intensity = 1,
+                   mmpp = 1,
+                   detectionTrunc = -1,
+                   matern_size = 1,
+                   g_function = 1,
+                   covRate =  "",
+                   covDetection =  "",
+                   usePCpriors = 0,
+                   pcPriorsRange_intensity = c(300,0.1),
+                   pcPriorsSD_intensity = c(1,0.1),
+                   pcPriorsRange_size = c(300,0.1),
+                   pcPriorsSD_size = c(1,0.1),
+                   penalizeMMPP = c(1,0.1),
+                   spdeDetails = list(cutoff = 50,max.edge = c(80,150)),
+                   applyPodSize = 1,
+                   podSizeDist = 2,
+                   independentPodSize = 1 ,
+                   dependentPodSize = c(0,1),
+                   cellsize = 20,
+                   UTMproj = CRS("+proj=utm +zone=22 +units=km"),
+                   LatLonProj =  CRS("+proj=longlat +datum=WGS84")
+                   ){
   conf = list()
-
-  conf$mmpp = 1 #apply MMPP
-  conf$matern_intensity = 1 #apply spatial effect intensity
-  conf$matern_size = 1 #apply spatial effect size
-  conf$g_function = 1 #1: Normal, 2: Hazard
-  conf$UTMproj = CRS("+proj=utm +zone=22 +units=km")
-  conf$LatLonProj =  CRS("+proj=longlat +datum=WGS84")
-
-  conf$covRate =  ""
-  conf$covDetection =  "vessel"
-  conf$minObserved = 0
-
-  conf$pcPriorsRange_intensity = c(300,0.1)
-  conf$pcPriorsSD_intensity = c(1,0.1)
-  conf$pcPriorsRange_size = c(300,0.1)
-  conf$pcPriorsSD_size = c(1,0.1)
-  conf$usePCpriors = 0
-
-  conf$penalizeMMPP = c(1,0.2)
-
-  conf$spdeDetails = list()
-  conf$spdeDetails$cutoff = 50 #TODO, use d
-  conf$spdeDetails$max.edge = c(80,150) #TODO, use d
-
-  conf$applyPodSize = 1 #1: Pod size is included, 0: Not included
-  conf$podSizeDist = 2 #1:poisson, 2:negative binomial
-  conf$independentPodSize = 1 #1: Size independent of intensity
-  conf$dependentPodSize = c(0,1) #First if beta0 is included and second if beta_SPDE is included
-  conf$detectionTrunc = detectionTrunc #No truncation if negative
-
-  conf$cellsize = 20
-  
+  conf$matern_intensity = matern_intensity 
+  conf$mmpp = mmpp 
+  conf$matern_size = matern_size 
+  conf$g_function = g_function 
+  conf$UTMproj = UTMproj
+  conf$LatLonProj = LatLonProj
+  conf$covRate =  covRate
+  conf$covDetection =  covDetection
+  conf$pcPriorsRange_intensity = pcPriorsRange_intensity
+  conf$pcPriorsSD_intensity = pcPriorsSD_intensity
+  conf$pcPriorsRange_size = pcPriorsRange_size
+  conf$pcPriorsSD_size = pcPriorsSD_size
+  conf$usePCpriors = usePCpriors
+  conf$penalizeMMPP = penalizeMMPP
+  conf$spdeDetails = spdeDetails
+  conf$applyPodSize = applyPodSize
+  conf$podSizeDist = podSizeDist
+  conf$independentPodSize = independentPodSize
+  conf$dependentPodSize = dependentPodSize 
+  conf$detectionTrunc = detectionTrunc 
+  conf$cellsize = cellsize
   return(conf)
 }
 
 
 
-#' @param
-#' @return map
+#' setMap
+#' 
+#' @param conf Model configurations returned by \code{\link{defConf}}
+#' @param par Model parameters set by \code{\link{setPar}} 
+#' @return map-variable used by TMB
 #' @export
-#' @examples
 setMap = function(conf,par){
-
   map = list()
   map$log_sigma =c(0,1)
   map$log_kappa = c(0,1)
-
   if(conf$applyPodSize==1 & conf$independentPodSize ==0){
     map$beta_size = c(0,1)
     if(conf$dependentPodSize[1]==0){
@@ -62,11 +92,9 @@ setMap = function(conf,par){
     }
     map$beta_size = as.factor(map$beta_size)
   }
-
   if(conf$g_function==1){
     map$logB = as.factor(NA)
   }
-
   if(conf$matern_intensity==0){ #Remove spatial and mmpp effects.
     map$x_intensity = as.factor(rep(NA,length(par$x_intensity)))
     map$log_sigma[1] = NA
@@ -76,16 +104,12 @@ setMap = function(conf,par){
     map$log_c_mmpp = as.factor(NA)
     map$log_mu = as.factor(c(NA,NA))
   }
-
-
   if(conf$applyPodSize == 0 | conf$independentPodSize == 0 | conf$matern_size==0){
     map$x_size = as.factor(rep(NA,length(par$x_size)))
     map$log_sigma[2] = NA
     map$log_kappa[2] = NA
   }
-
   map$log_sigma = as.factor(map$log_sigma)
   map$log_kappa = as.factor(map$log_kappa)
-
   return(map)
 }

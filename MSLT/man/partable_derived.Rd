@@ -7,7 +7,7 @@
 partable_derived(run, sdrep_bc = NULL, CI_level = 0.95)
 }
 \arguments{
-\item{run}{run to extract model parameters from}
+\item{run}{run returned by \code{\link{fitMSLT}} to extract model parameters from}
 
 \item{sdrep_bc}{the biascorrected sdreport object for the run to extract model parameters from}
 

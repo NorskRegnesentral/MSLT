@@ -1,9 +1,14 @@
-#' @param
+#' fitMSLT
+#' 
+#' @param data data list returned by \code{\link{setData}}
+#' @param par parameter list  returned by \code{\link{setPar}}
+#' @param conf model configurations list  returned by \code{\link{defConf}}
+#' @param map map object used by TMB to couple and remove parameters
+#' @param ... additional parameters passed to sdreport 
 #' @return fitted model
 #' @useDynLib mslt
 #' @export
-#' @examples
-fitLGPP = function(data,par,conf,rel.tol=1e-10,map = setMap(conf, par),...){
+fitMSLT = function(data,par,conf,rel.tol=1e-10,map = setMap(conf, par),...){
 
   #Estimating the model and extract results-------------
   startTime <- Sys.time()
@@ -32,17 +37,20 @@ fitLGPP = function(data,par,conf,rel.tol=1e-10,map = setMap(conf, par),...){
   timeUsed = endTime - startTime
   print(timeUsed)
 
-  class(fit) = "lineTransectLGPP"
+  class(fit) = "mslt"
   return(fit)
 }
 
 
 
 
-#' @param
+#' jit
+#' 
+#' @param run fitted model returned by \code{\link{fitMSLT}}
+#' @param sd standard deviation in jitter analysis
+#' @param ncores number of cores used in jitter analysis
 #' @return fitted model
 #' @export
-#' @examples
 jit = function(run, sd = 0.2, nojit = 50,ncores = 2){
   par = setPar(run$data,run$conf)
   parTmp = setPar(run$data,run$conf)
@@ -63,13 +71,13 @@ jit = function(run, sd = 0.2, nojit = 50,ncores = 2){
     clusterExport(cl, varlist=c("lib.ver","run"), envir=environment())
     clusterEvalQ(cl, {library(mslt, lib.loc=lib.ver)})
     runs <- parLapply(cl, pars, function(p){
-      rr = fitLGPP(run$data,  p,run$conf)
+      rr = fitMSLT(run$data,  p,run$conf)
       FreeADFun(rr$obj)#Free memory from C-side
       rr
     })
   } else {
     runs <- lapply(pars, function(p){
-      rr = fitLGPP(run$data,  p, run$conf)
+      rr = fitMSLT(run$data,  p, run$conf)
       FreeADFun(rr$obj)#Free memory from C-side
       rr
       })
