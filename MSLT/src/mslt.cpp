@@ -34,6 +34,7 @@ Type objective_function<Type>::operator() (){
   DATA_VECTOR(pcPriorsRange_size); //pcPrior for spatial range
   DATA_VECTOR(pcPriorsSD_size); //pcPrior for spatial marginal variance
   DATA_INTEGER(usePCpriors); //1: apply pcpriors
+  DATA_INTEGER(spatialBiasCorFigure);
 
   DATA_IVECTOR(abortLeft);
   DATA_IVECTOR(abortRight);
@@ -93,7 +94,7 @@ Type objective_function<Type>::operator() (){
     REPORT(x_intensity);
   }
 
-  Type scaleS = Type(1)/((4*3.14159265)*kappa(0)*kappa(0)); //No effect on results, but needed for interpreting the sigma^2 parameter as marginal variance. See section 2.1 in Lindgren (2011)
+  Type scaleS = Type(1)/((4*M_PI)*kappa(0)*kappa(0)); //No effect on results, but needed for interpreting the sigma^2 parameter as marginal variance. See section 2.1 in Lindgren (2011)
   x_intensity = x_intensity/sqrt(scaleS) *sigma(0);
 
 
@@ -236,7 +237,7 @@ Type objective_function<Type>::operator() (){
         REPORT(x_size);
       }
 
-      Type scaleS_size = Type(1)/((4*3.14159265)*kappa(1)*kappa(1)); //No effect on results, but needed for interpreting the sigma^2 parameter as marginal variance. See section 2.1 in Lindgren (2011)
+      Type scaleS_size = Type(1)/((4*M_PI)*kappa(1)*kappa(1)); //No effect on results, but needed for interpreting the sigma^2 parameter as marginal variance. See section 2.1 in Lindgren (2011)
       x_size = x_size/sqrt(scaleS_size) *sigma(1);
 
     }
@@ -271,14 +272,16 @@ Type objective_function<Type>::operator() (){
       }
     }
     //Bias correct figure in paper
-    vector<Type> linPredFigure =   exp(beta_z(0) + x_intensity) * k_psi;
-    vector<Type> linPredFigureSize =  exp(beta_size(0) + x_size);
-    for(int i = 0; i< linPredFigure.size(); ++i){
-      sizeNB = exp(logSizeNB(0));
-      varNB = linPredFigureSize(i) + linPredFigureSize(i)*linPredFigureSize(i)/sizeNB;
-      linPredFigure(i) = linPredFigure(i)*(linPredFigureSize(i)/(1-dnbinom2(Type(0), linPredFigureSize(i), varNB)));
+    if(spatialBiasCorFigure==1){ //Needed when producing spatial bias corrected plots in paper, removed by defauls because requires a couple of minutes computation time
+      vector<Type> linPredFigure =   exp(beta_z(0) + x_intensity) * k_psi;
+      vector<Type> linPredFigureSize =  exp(beta_size(0) + x_size);
+      for(int i = 0; i< linPredFigure.size(); ++i){
+        sizeNB = exp(logSizeNB(0));
+        varNB = linPredFigureSize(i) + linPredFigureSize(i)*linPredFigureSize(i)/sizeNB;
+        linPredFigure(i) = linPredFigure(i)*(linPredFigureSize(i)/(1-dnbinom2(Type(0), linPredFigureSize(i), varNB)));
+      }
+      ADREPORT(linPredFigure); 
     }
-//    ADREPORT(linPredFigure); //Needed when producing spatial bias corrected plots in paper, removed because requires a couple of minutes computation time
   }
   
   Type abundance = area*linPred.sum()/linPred.size();
