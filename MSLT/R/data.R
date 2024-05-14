@@ -23,9 +23,10 @@ setData = function(d,predAreaUTM, conf){
 
   #Define mid-points as coordinates for integration points
   integrationPointsUTM = as.matrix(d[,c("utmx","utmy")])
+  tmp = integrationPointsUTM
   for(i in 1:dim(integrationPointsUTM)[1]){
-    if(d$code[i]==1){
-      integrationPointsUTM[i,] = colMeans(integrationPointsUTM[(i-1):i,])
+    if(d$code[i]!=0){
+      integrationPointsUTM[i,] = colMeans(tmp[(i-1):i,])
     }
   }
 
@@ -105,7 +106,8 @@ setData = function(d,predAreaUTM, conf){
               podSizeDist = conf$podSizeDist,
               independentPodSize = conf$independentPodSize,
               detectionTrunc = conf$detectionTrunc,
-              useMMPP = conf$mmpp[1]
+              useMMPP = conf$mmpp[1],
+              spatialBiasCorFigure = 0
   )
 
   attributes(data)$mesh = mesh
