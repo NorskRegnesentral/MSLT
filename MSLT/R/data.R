@@ -23,10 +23,10 @@ setData = function(d,predAreaUTM, conf){
 
   #Define mid-points as coordinates for integration points
   integrationPointsUTM = as.matrix(d[,c("utmx","utmy")])
-  tmp = integrationPointsUTM
+  endpoints = integrationPointsUTM
   for(i in 1:dim(integrationPointsUTM)[1]){
     if(d$code[i]!=0){
-      integrationPointsUTM[i,] = colMeans(tmp[(i-1):i,])
+      integrationPointsUTM[i,] = colMeans(endpoints[(i-1):i,])
     }
   }
 
@@ -71,6 +71,7 @@ setData = function(d,predAreaUTM, conf){
 
   #matrices needed in the SPDE procedure
   AalongLines = inla.spde.make.A(mesh,integrationPointsUTM)
+  AalongLinesEndpoints = inla.spde.make.A(mesh,endpoints)
   Apred = inla.spde.make.A(mesh,as.matrix(predData[,1:2]))
   spde = inla.spde2.matern(mesh, alpha=2)
   spdeMatrices = spde$param.inla[c("M0","M1","M2")]
@@ -78,6 +79,7 @@ setData = function(d,predAreaUTM, conf){
   AObs = inla.spde.make.A(mesh,obsUTM[d$code==2,])
 
   data = list(AalongLines = AalongLines,
+              AalongLinesEndpoints = AalongLinesEndpoints,
               Apred = Apred,
               AObs = AObs,
               spdeMatrices = spdeMatrices,

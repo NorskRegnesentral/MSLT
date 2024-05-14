@@ -13,7 +13,8 @@ Type objective_function<Type>::operator() (){
 
   //Load data -------
   DATA_STRUCT(spdeMatrices,spde_t); //Three matrices needed for representing the GMRF, see p. 8 in Lindgren et al. (2011)
-  DATA_SPARSE_MATRIX(AalongLines);  //A-matrix for integration points along line
+  DATA_SPARSE_MATRIX(AalongLines);  //A-matrix for midpoints on transect lines used in Riemann approximation, see C_j in equation (15) in Breivik et al. (2024)
+  DATA_SPARSE_MATRIX(AalongLinesEndpoints); //A-matrix for endpoints used for D_j in equation (15) in Breivik et al. (2024)
   DATA_SPARSE_MATRIX(Apred);  //A-matrix for prediction
   DATA_SPARSE_MATRIX(AObs);  //A-matrix as sightings
   DATA_SCALAR(area); //Area of area of interest
@@ -117,7 +118,8 @@ Type objective_function<Type>::operator() (){
 
   //Structure needed for effort constribution
   vector<Type> Z_transect =  X_z*beta_z+  AalongLines*x_intensity;
-
+  vector<Type> Z_transect_endpoints =  X_z*beta_z+  AalongLinesEndpoints*x_intensity; 
+  
 
   // Transect codes:
   // 0: start transect leg
@@ -173,9 +175,8 @@ Type objective_function<Type>::operator() (){
         break;
       case 2:  // Observation node
         P = P*expm_mmpp2(lambda,mu,lineIntegralDelta(i));
-        P(0,0) *= lambda(0);
-        P(0,1) *= lambda(1);
-        nll -= -log(esw);  // This is the normalizing constant that was skipped above in the detection function
+        P(0,0) *= exp(Z_transect_endpoints(i));
+        P(0,1) *= c_mmpp*exp(Z_transect_endpoints(i));
         break;
       }
       if(code(i)!=0){
@@ -188,7 +189,7 @@ Type objective_function<Type>::operator() (){
         nll -= -lambda*lineIntegralDelta(i);
       }
       if(code(i)==2){
-        nll -=Z_transect(i);
+        nll -=Z_transect_endpoints(i);
       }
       
     }
