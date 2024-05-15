@@ -84,7 +84,6 @@ partable_derived <-function(run,sdrep_bc = NULL,CI_level=0.95){
   range_psi = exp(c(run$rl$log_range_psi[1], run$rl$log_range_psi[1]+ qq*run$rlSd$log_range_psi[1]))
   k_psi = c(run$rl$k_psi, run$rl$k_psi[1] + qq*run$rlSd$k_psi[1])
   range_size = c(sqrt(8)/exp(run$pl$log_kappa[2]),sqrt(8)/exp(run$pl$log_kappa[2] + rev(qq)*run$plSd$log_kappa[2]))
-  meanGroupSize = c(run$rl$meanGroupSize[1],run$rl$meanGroupSize[1] +qq*run$rlSd$meanGroupSize[1])
   abundance = exp(c(run$rl$logAbundance[1],run$rl$logAbundance[1] + qq*run$rlSd$logAbundance[1]))
   if(!is.null(sdrep_bc)){
     rlBiasCorr = as.list(sdrep_bc,"Est. (bias.correct)", report = TRUE)
@@ -97,7 +96,7 @@ partable_derived <-function(run,sdrep_bc = NULL,CI_level=0.95){
   parTabTmp = rbind(range_int)
   parTab = rbind(parTabTmp,do.call(rbind,half_stripe_widthG))
   rownames(parTab) = c(rownames(parTabTmp),paste0("half_stripe_widthG",1:length(run$pl$beta_g)))
-  parTab = rbind(parTab,range_psi,k_psi,range_size,meanGroupSize,abundance,abundanceBiasCorrected)
+  parTab = rbind(parTab,range_psi,k_psi,range_size,abundance,abundanceBiasCorrected)
   parTab <- as.data.frame(parTab)
   
   colnames(parTab) <- c("Est","CI_L","CI_U")

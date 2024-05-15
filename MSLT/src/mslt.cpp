@@ -294,10 +294,12 @@ Type objective_function<Type>::operator() (){
 
   if(applyPodSize==1){
     sizeNB = exp(logSizeNB(0));
-    Type linPredMeanSize = exp(beta_size(0)+ 0.5*sigma(1)*sigma(1));
-    varNB = linPredMeanSize + linPredMeanSize*linPredMeanSize/sizeNB;
-    Type meanGroupSize = linPredMeanSize/(1-dnbinom2(Type(0), linPredMeanSize, varNB));
-    ADREPORT(meanGroupSize);
+    vector<Type> meanGroup = exp(beta_size(0)+ x_size);
+    for(int i = 0; i<x_size.size(); ++i){
+      varNB = meanGroup(i) + meanGroup(i)*meanGroup(i)/sizeNB;
+      meanGroup(i) = meanGroup(i)/(1-dnbinom2(Type(0), meanGroup(i), varNB));
+    }
+    ADREPORT(meanGroup);
   }
 
   
