@@ -51,8 +51,8 @@ print.jit<-function(jit,...){
   maxlist <- relist(maxabsdiff, run$pl)
   ret <- as.data.frame(unlist(lapply(maxlist,function(x)if(length(x)>0)max(x) else NULL)))
   logLik <- max(abs(unlist(lapply(j2, logLik))-logLik(run)))
-  abundance <- max(unlist(lapply(j2, function(f)abs(logAbundance(f)-logAbundance(run)))))
-  ret <- rbind(ret,  logLik=logLik, abundance = abundance) #TODO: Add abundance
+  abundance <- max(unlist(lapply(j2, function(f)abs(f$rl$logAbundance-run$rl$logAbundance))))
+  ret <- rbind(ret,  logLik=logLik, abundance = abundance)
   names(ret) <- "max(|delta|)"
   ret[which(rownames(ret)=="x_intensity"),] = ret[which(rownames(ret)=="x_intensity"),]/sqrt(scale[1]) *exp(run$pl$log_sigma[1])
   ret[which(rownames(ret)=="x_size"),] = ret[which(rownames(ret)=="x_size"),]/sqrt(scale[2]) *exp(run$pl$log_sigma[2])
