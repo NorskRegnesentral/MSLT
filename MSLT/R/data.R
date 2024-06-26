@@ -19,6 +19,7 @@ setData = function(d,predAreaUTM, conf){
   obsLatLon <- sf::st_as_sf(coords, coords = c("lon", "lat"),crs="+proj=longlat") 
   obsUTM <- sf::st_transform(obsLatLon, conf$UTMproj)
   obsUTM = sf::st_coordinates(obsUTM)
+  obsLatLon = sf::st_coordinates(obsLatLon)
   d$utmy = obsUTM[,2]
   d$utmx = obsUTM[,1]
   
