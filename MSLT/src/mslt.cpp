@@ -35,8 +35,9 @@ Type objective_function<Type>::operator() (){
   DATA_VECTOR(pcPriorsRange_size); //pcPrior for spatial range
   DATA_VECTOR(pcPriorsSD_size); //pcPrior for spatial marginal variance
   DATA_INTEGER(usePCpriors); //1: apply pcpriors
-  DATA_INTEGER(spatialBiasCorFigure);
-
+  DATA_INTEGER(spatialBiasCorFigure); //ADREPORT spatial abundance estimates, to do that is time consuming
+  DATA_INTEGER(meanGroupFigure); //ADREPORT spatial mean group size estimates, to do that is time consuming
+  
   DATA_IVECTOR(abortLeft);
   DATA_IVECTOR(abortRight);
   DATA_SCALAR(detectionTrunc); //longest distance in truncated observation distribution, not used if negative
@@ -292,14 +293,16 @@ Type objective_function<Type>::operator() (){
   Type log_range_psi = log(-log(0.1)/mu.sum());
   ADREPORT(log_range_psi);
 
-  if(applyPodSize==1){
-    sizeNB = exp(logSizeNB(0));
-    vector<Type> meanGroup = exp(beta_size(0)+ x_size);
-    for(int i = 0; i<x_size.size(); ++i){
-      varNB = meanGroup(i) + meanGroup(i)*meanGroup(i)/sizeNB;
-      meanGroup(i) = meanGroup(i)/(1-dnbinom2(Type(0), meanGroup(i), varNB));
-    }
-    ADREPORT(meanGroup);
+  if(meanGroupFigure==1){
+    if(applyPodSize==1){
+      sizeNB = exp(logSizeNB(0));
+      vector<Type> meanGroup = exp(beta_size(0)+ x_size);
+      for(int i = 0; i<x_size.size(); ++i){
+        varNB = meanGroup(i) + meanGroup(i)*meanGroup(i)/sizeNB;
+        meanGroup(i) = meanGroup(i)/(1-dnbinom2(Type(0), meanGroup(i), varNB));
+      }
+      ADREPORT(meanGroup);
+  }
   }
 
   
