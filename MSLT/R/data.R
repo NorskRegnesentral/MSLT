@@ -19,7 +19,6 @@ setData = function(d,predAreaUTM, conf){
   obsLatLon <- sf::st_as_sf(coords, coords = c("lon", "lat"),crs="+proj=longlat") 
   obsUTM <- sf::st_transform(obsLatLon, conf$UTMproj)
   obsUTM = sf::st_coordinates(obsUTM)
-  obsLatLon = sf::st_coordinates(obsLatLon)
   d$utmy = obsUTM[,2]
   d$utmx = obsUTM[,1]
   
@@ -117,6 +116,12 @@ setData = function(d,predAreaUTM, conf){
               meanGroupFigure = 0
   )
 
+  #Add attributes that is not needed in the TMB program, but neat to have
+  obsLatLon = data.frame(sf::st_coordinates(obsLatLon))
+  colnames(obsLatLon) = c("lon","lat")
+  obsUTM = data.frame(obsUTM)
+  colnames(obsUTM) = c("lon","lat")
+  
   attributes(data)$mesh = mesh
   attributes(data)$obsUTM = obsUTM
   attributes(data)$obsLatLon = obsLatLon
