@@ -15,12 +15,13 @@ setData = function(d,predAreaUTM, conf){
   }
 
   #Convert to UTM coordinates
-  coords = as.matrix(d[,c("lon","lat")])
-  obsLatLon = SpatialPoints(coords,proj4string = conf$LatLonProj)
-  obsUTM = spTransform(obsLatLon, conf$UTMproj)
-  d$utmx = obsUTM@coords[,1]
-  d$utmy = obsUTM@coords[,2]
-
+  coords = data.frame(d[,c("lon","lat")])
+  obsLatLon <- sf::st_as_sf(coords, coords = c("lon", "lat"),crs="+proj=longlat") 
+  obsUTM <- sf::st_transform(obsLatLon, conf$UTMproj)
+  obsUTM = sf::st_coordinates(obsUTM)
+  d$utmy = obsUTM[,2]
+  d$utmx = obsUTM[,1]
+  
   #Define mid-points as coordinates for integration points
   integrationPointsUTM = as.matrix(d[,c("utmx","utmy")])
   endpoints = integrationPointsUTM
@@ -37,21 +38,19 @@ setData = function(d,predAreaUTM, conf){
   d$abortRight[is.na(d$Stbd)] =1
 
   #Define aundance integration points
-  points = sp::makegrid(predAreaUTM,cellsize = conf$cellsize)
-  pointsSP = sp::SpatialPoints(points,conf$UTMproj)
-  inside = rep(1,dim(pointsSP@coords)[1])
-  inside[which(is.na(over(pointsSP,predAreaUTM)))] = 0 
-  predData = points[which(inside==1),]
+  points = sf::st_make_grid(predAreaUTM,cellsize=c(conf$cellsize,conf$cellsize),what="centers")
+  points = sf::st_as_sf(points)
+  points = sf::st_join(points,predAreaUTM,left=FALSE)
+  predData = data.frame(sf::st_coordinates(points))
   names(predData) = c("utmx", "utmy")
   
-  #Define mesh
-  full.buffer <- rgeos::gBuffer(predAreaUTM, width=100, joinStyle='ROUND')
-  boundary <- as.inla.mesh.segment(full.buffer)
-
-  mesh <- inla.mesh.2d(predData,
-                       max.edge = conf$spdeDetails$max.edge ,
-                       cutoff = conf$spdeDetails$cutoff,offset = c(1,-0.1),
-                       boundary=boundary)
+  buffer = sf::st_buffer(predAreaUTM,conf$buffer)
+  mesh <- fmesher::fm_mesh_2d(predData,
+                              max.edge =conf$spdeDetails$max.edge,
+                              boundary = buffer,
+                              cutoff = conf$spdeDetails$cutoff,
+                              offset = c(1,-0.1)
+  )
 
   #Set up regression coefficients
   if(conf$covDetection== "vessel"){
@@ -70,13 +69,17 @@ setData = function(d,predAreaUTM, conf){
   X_z_pred = gam(utmx ~  1 , data = predData,fit =FALSE)$X
 
   #matrices needed in the SPDE procedure
-  AalongLines = inla.spde.make.A(mesh,integrationPointsUTM)
-  AalongLinesEndpoints = inla.spde.make.A(mesh,endpoints)
-  Apred = inla.spde.make.A(mesh,as.matrix(predData[,1:2]))
-  spde = inla.spde2.matern(mesh, alpha=2)
-  spdeMatrices = spde$param.inla[c("M0","M1","M2")]
+  AalongLines <- fmesher::fm_basis(mesh,integrationPointsUTM)
+  AalongLinesEndpoints <- fmesher::fm_basis(mesh,endpoints)
+  Apred <- fmesher::fm_basis(mesh,as.matrix(predData[,1:2]))
+  AObs <- fmesher::fm_basis(mesh,obsUTM[d$code==2,])
+  
+  spde <- fmesher::fm_fem(mesh)
+  spdeMatrices = list(M0 = spde$c0, M1 = spde$g1,M2 = spde$g2)
+  
+#  spdeI = inla.spde2.matern(mesh, alpha=2)
+#  spdeMatrices = spdeI$param.inla[c("M0","M1","M2")]
 
-  AObs = inla.spde.make.A(mesh,obsUTM[d$code==2,])
 
   data = list(AalongLines = AalongLines,
               AalongLinesEndpoints = AalongLinesEndpoints,
@@ -93,7 +96,7 @@ setData = function(d,predAreaUTM, conf){
               X_z_pred = X_z_pred,
               g_function = conf$g_function, #Which detection function to use
               penalize = conf$penalizeMMPP,
-              area = predAreaUTM@polygons[[1]]@area,
+              area = as.numeric(sf::st_area(predAreaUTM)),
               abortLeft = d$abortLeft,
               abortRight = d$abortRight,
               matern_intensity = conf$matern_intensity,
@@ -109,7 +112,8 @@ setData = function(d,predAreaUTM, conf){
               independentPodSize = conf$independentPodSize,
               detectionTrunc = conf$detectionTrunc,
               useMMPP = conf$mmpp[1],
-              spatialBiasCorFigure = 0
+              spatialBiasCorFigure = 0,
+              meanGroupFigure = 0
   )
 
   attributes(data)$mesh = mesh

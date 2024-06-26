@@ -20,6 +20,7 @@
 #' @param cellsize Distance between spatial quadratic integration points for total abundance 
 #' @param UTMproj CRS-UTM projection
 #' @param LatLonProj CRS-latitude and longitude projection
+#' @param buffer A buffer (in km) outside of the area of interest. The buffer is used when constructing the boundary input to fmesher::fm_mesh_2d
 #' @return Configurations 
 #' @export
 defConf = function(matern_intensity = 1,
@@ -35,14 +36,15 @@ defConf = function(matern_intensity = 1,
                    pcPriorsRange_size = c(300,0.1),
                    pcPriorsSD_size = c(1,0.1),
                    penalizeMMPP = c(1,0.1),
-                   spdeDetails = list(cutoff = 50,max.edge = c(80,150)),
+                   spdeDetails = list(cutoff = 30,max.edge = c(60,150)),
                    applyPodSize = 1,
                    podSizeDist = 2,
                    independentPodSize = 1 ,
                    dependentPodSize = c(0,1),
                    cellsize = 20,
-                   UTMproj = CRS("+proj=utm +zone=22 +units=km"),
-                   LatLonProj =  CRS("+proj=longlat +datum=WGS84")
+                   UTMproj = sf::st_crs("+proj=utm +zone=22 +units=km"),
+                   LatLonProj =  sf::st_crs("+proj=longlat +datum=WGS84"),
+                   buffer = 150
                    ){
   conf = list()
   conf$matern_intensity = matern_intensity 
@@ -66,6 +68,7 @@ defConf = function(matern_intensity = 1,
   conf$dependentPodSize = dependentPodSize 
   conf$detectionTrunc = detectionTrunc 
   conf$cellsize = cellsize
+  conf$buffer = buffer
   return(conf)
 }
 
