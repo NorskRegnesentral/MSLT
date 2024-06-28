@@ -36,15 +36,15 @@ defConf = function(matern_intensity = 1,
                    pcPriorsRange_size = c(300,0.1),
                    pcPriorsSD_size = c(1,0.1),
                    penalizeMMPP = c(1,0.1),
-                   spdeDetails = list(cutoff = 30,max.edge = c(60,150)),
+                   spdeDetails = list(cutoff = 30,max.edge = c(70,150)),
                    applyPodSize = 1,
                    podSizeDist = 2,
                    independentPodSize = 1 ,
                    dependentPodSize = c(0,1),
-                   cellsize = 20,
+                   cellsize = 25,
                    UTMproj = sf::st_crs("+proj=utm +zone=22 +units=km"),
                    LatLonProj =  sf::st_crs("+proj=longlat +datum=WGS84"),
-                   buffer = 150
+                   buffer = 80
                    ){
   conf = list()
   conf$matern_intensity = matern_intensity 
