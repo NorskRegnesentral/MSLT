@@ -13,16 +13,16 @@ fitMSLT = function(data,par,conf,rel.tol=1e-10,map = setMap(conf, par),...){
   #Estimating the model and extract results-------------
   startTime <- Sys.time()
   if(conf$mmpp==1){
-    obj <- MakeADFun(data, par, random=c("x_intensity","x_size"), profile = c("log_c_mmpp"),DLL="mslt", map = map)	
+    obj <- TMB::MakeADFun(data, par, random=c("x_intensity","x_size"), profile = c("log_c_mmpp"),DLL="mslt", map = map)	
   }else{
-    obj <- MakeADFun(data, par, random=c("x_intensity","x_size"),DLL="mslt", map = map)	
+    obj <- TMB::MakeADFun(data, par, random=c("x_intensity","x_size"),DLL="mslt", map = map)	
   }
   lower = list()
   lower$log_c_mmpp = -10#NB, set lower boundary on jump in MMPP
 
   fit = tryCatch({
     opt <- nlminb(obj$par, obj$fn, obj$gr,control = list(rel.tol = rel.tol,trace = 1,iter.max = 1000,eval.max = 2000),lower = lower)
-    rep = sdreport(obj, ...)
+    rep = TMB::sdreport(obj, ...)
     pl = as.list(rep,"Est")
     plSd = as.list(rep,"Std")
     rl = as.list(rep, what = "Est", report = TRUE)
@@ -65,20 +65,20 @@ jit = function(run, sd = 0.2, nojit = 50,ncores = 2){
 
 
   if(ncores>1){
-    cl <- makeCluster(ncores) #set up nodes
-    on.exit(stopCluster(cl)) #shut it down
+    cl <- parallel::makeCluster(ncores) #set up nodes
+    on.exit(parallel::stopCluster(cl)) #shut it down
     lib.ver <- dirname(path.package("mslt"))
-    clusterExport(cl, varlist=c("lib.ver","run"), envir=environment())
-    clusterEvalQ(cl, {library(mslt, lib.loc=lib.ver)})
-    runs <- parLapply(cl, pars, function(p){
+    parallel::clusterExport(cl, varlist=c("lib.ver","run"), envir=environment())
+    parallel::clusterEvalQ(cl, {library(mslt)})
+    runs <- parallel::parLapply(cl, pars, function(p){
       rr = fitMSLT(run$data,  p,run$conf)
-      FreeADFun(rr$obj)#Free memory from C-side
+      TMB::FreeADFun(rr$obj)#Free memory from C-side
       rr
     })
   } else {
     runs <- lapply(pars, function(p){
       rr = fitMSLT(run$data,  p, run$conf)
-      FreeADFun(rr$obj)#Free memory from C-side
+      TMB::FreeADFun(rr$obj)#Free memory from C-side
       rr
       })
   }

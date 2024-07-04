@@ -10,8 +10,8 @@ Description: Applying data from line transects to fit a thinned latent Gaussian 
 License: What license is it under?
 Encoding: UTF-8
 LazyData: true
-Depends: TMB, RcppEigen,mgcv,fmesher,sf
+Imports: TMB, RcppEigen,mgcv,fmesher,sf,parallel
 LinkingTo: TMB, RcppEigen
 URL: ...
 BugReports: .../issues
-RoxygenNote: 7.2.3
+RoxygenNote: 7.3.1

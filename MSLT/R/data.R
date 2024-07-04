@@ -71,19 +71,19 @@ setData = function(d,predAreaUTM, conf){
 
   #Set up regression coefficients
   if(conf$covDetection== "vessel"){
-    X_g_obs = gam(lon ~  -1 + vessel  , data = d[which(d$code==2),],fit =FALSE)$X
-    X_g_left = gam(lon ~  -1 + vessel , data = d,fit =FALSE,)$X
+    X_g_obs = mgcv::gam(lon ~  -1 + vessel  , data = d[which(d$code==2),],fit =FALSE)$X
+    X_g_left = mgcv::gam(lon ~  -1 + vessel , data = d,fit =FALSE,)$X
     X_g_right = X_g_left
   }else{
-    X_g_obs = gam(lon ~  1  , data = d[which(d$code==2),],fit =FALSE)$X
-    X_g_left = gam(lon ~  1 , data = d,fit =FALSE)$X
-    X_g_right = gam(lon ~  1 , data = d,fit =FALSE)$X
+    X_g_obs = mgcv::gam(lon ~  1  , data = d[which(d$code==2),],fit =FALSE)$X
+    X_g_left = mgcv::gam(lon ~  1 , data = d,fit =FALSE)$X
+    X_g_right = mgcv::gam(lon ~  1 , data = d,fit =FALSE)$X
   }
 
 
   #Set up regression coefficients for rate
-  X_z = gam(lon ~  1  , data = d,fit =FALSE)$X
-  X_z_pred = gam(utmx ~  1 , data = predData,fit =FALSE)$X
+  X_z = mgcv::gam(lon ~  1  , data = d,fit =FALSE)$X
+  X_z_pred = mgcv::gam(utmx ~  1 , data = predData,fit =FALSE)$X
 
   #matrices needed in the SPDE procedure
   AalongLines <- fmesher::fm_basis(mesh,integrationPointsUTM)

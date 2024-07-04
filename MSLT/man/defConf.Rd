@@ -18,14 +18,15 @@ defConf(
   pcPriorsRange_size = c(300, 0.1),
   pcPriorsSD_size = c(1, 0.1),
   penalizeMMPP = c(1, 0.1),
-  spdeDetails = list(cutoff = 50, max.edge = c(80, 150)),
+  spdeDetails = list(cutoff = 30, max.edge = c(80, 150)),
   applyPodSize = 1,
   podSizeDist = 2,
   independentPodSize = 1,
   dependentPodSize = c(0, 1),
-  cellsize = 20,
-  UTMproj = CRS("+proj=utm +zone=22 +units=km"),
-  LatLonProj = CRS("+proj=longlat +datum=WGS84")
+  cellsize = 25,
+  UTMproj = sf::st_crs("+proj=utm +zone=22 +units=km"),
+  LatLonProj = sf::st_crs("+proj=longlat +datum=WGS84"),
+  buffer = 80
 )
 }
 \arguments{
@@ -68,6 +69,8 @@ defConf(
 \item{UTMproj}{CRS-UTM projection}
 
 \item{LatLonProj}{CRS-latitude and longitude projection}
+
+\item{buffer}{A buffer (in km) outside of the area of interest. The buffer is used when constructing the boundary input to fmesher::fm_mesh_2d}
 }
 \value{
 Configurations
