@@ -6,23 +6,22 @@
 #' @param map map object used by TMB to couple and remove parameters
 #' @param ... additional parameters passed to sdreport 
 #' @return fitted model
-#' @useDynLib mslt
 #' @export
 fitMSLT = function(data,par,conf,rel.tol=1e-10,map = setMap(conf, par),...){
 
   #Estimating the model and extract results-------------
   startTime <- Sys.time()
   if(conf$mmpp==1){
-    obj <- TMB::MakeADFun(data, par, random=c("x_intensity","x_size"), profile = c("log_c_mmpp"),DLL="mslt", map = map)	
+    obj <- RTMB::MakeADFun(mslt, par, random=c("x_intensity","x_size"), profile = c("log_c_mmpp"), map = map)	
   }else{
-    obj <- TMB::MakeADFun(data, par, random=c("x_intensity","x_size"),DLL="mslt", map = map)	
+    obj <- RTMB::MakeADFun(mslt, par, random=c("x_intensity","x_size"), map = map)	
   }
   lower = list()
   lower$log_c_mmpp = -10#NB, set lower boundary on jump in MMPP
 
   fit = tryCatch({
     opt <- nlminb(obj$par, obj$fn, obj$gr,control = list(rel.tol = rel.tol,trace = 1,iter.max = 1000,eval.max = 2000),lower = lower)
-    rep = TMB::sdreport(obj, ...)
+    rep = RTMB::sdreport(obj, ...)
     pl = as.list(rep,"Est")
     plSd = as.list(rep,"Std")
     rl = as.list(rep, what = "Est", report = TRUE)
