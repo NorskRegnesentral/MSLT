@@ -43,31 +43,14 @@ setData = function(d,predAreaUTM, conf){
   points = sf::st_join(points,predAreaUTM,left=FALSE)
   predData = data.frame(sf::st_coordinates(points))
   names(predData) = c("utmx", "utmy")
-  
-  #Define points used to make mesh
-  done = FALSE
-  dummy = sqrt(as.numeric(sf::st_area(predAreaUTM)))/10
-  while(!done){
-    meshPoints = sf::st_make_grid(predAreaUTM,cellsize=c(dummy,dummy),what="centers")
-    meshPoints = sf::st_as_sf(meshPoints)
-    meshPoints = sf::st_join(meshPoints,predAreaUTM,left=FALSE)
-    meshPoints = data.frame(sf::st_coordinates(meshPoints))
-    names(meshPoints) = c("utmx", "utmy")
-    if(dim(meshPoints)[1]>20000){
-      done = TRUE #More than 20000 points in area to define mesh on
-    }else{
-      dummy = dummy*0.75  
-    }
-  }
 
-  
   buffer = sf::st_buffer(predAreaUTM,conf$buffer)
-  mesh <- fmesher::fm_mesh_2d(meshPoints,
+  mesh <- fmesher::fm_mesh_2d(obsUTM,
                               max.edge =conf$spdeDetails$max.edge,
                               boundary = buffer,
                               cutoff = conf$spdeDetails$cutoff,
-                              offset = c(1,-0.1)
-  )
+                              min.angle = conf$spdeDetails$min.angle,
+                              offset = c(1,-0.1))
 
   #Set up regression coefficients
   if(conf$covDetection== "vessel"){
