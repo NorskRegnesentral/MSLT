@@ -17,7 +17,7 @@ Type objective_function<Type>::operator() (){
   DATA_SPARSE_MATRIX(AalongLinesEndpoints); //A-matrix for endpoints used for D_j in equation (15) in Breivik et al. (2024)
   DATA_SPARSE_MATRIX(Apred);  //A-matrix for prediction
   DATA_SPARSE_MATRIX(AObs);  //A-matrix as sightings
-  DATA_SCALAR(area); //Area of area of interest
+  DATA_VECTOR(areas); //Areas each integration point represents for abundance estimation
 
   DATA_MATRIX(X_g_obs); //Design matrix for observations (detection)
   DATA_MATRIX(X_g_left); //Design matrix for left side along transect lines
@@ -286,7 +286,7 @@ Type objective_function<Type>::operator() (){
     }
   }
   
-  Type abundance = area*linPred.sum()/linPred.size();
+  Type abundance = (areas*linPred).sum(); 
   Type logAbundance = log(abundance);
   ADREPORT(logAbundance);
 

@@ -38,9 +38,12 @@ setData = function(d,predAreaUTM, conf){
   d$abortRight[is.na(d$Stbd)] =1
 
   #Define aundance integration points
-  points = sf::st_make_grid(predAreaUTM,cellsize=c(conf$cellsize,conf$cellsize),what="centers")
-  points = sf::st_as_sf(points)
-  points = sf::st_join(points,predAreaUTM,left=FALSE)
+  grid <- sf::st_make_grid(predAreaUTM, cellsize = conf$cellsize)
+  grid_sf <- sf::st_as_sf(grid)
+  discretized_areas <- sf::st_intersection(grid_sf, predAreaUTM)#Intersection to find overlapping areas
+  discretized_areas$area <- sf::st_area(discretized_areas)
+  points=sf::st_centroid(sf::st_geometry(discretized_areas))
+  
   predData = data.frame(sf::st_coordinates(points))
   names(predData) = c("utmx", "utmy")
 
@@ -50,8 +53,8 @@ setData = function(d,predAreaUTM, conf){
                               boundary = buffer,
                               cutoff = conf$spdeDetails$cutoff,
                               min.angle = conf$spdeDetails$min.angle,
-                              offset = c(1,-0.1))
-
+                              offset = conf$spdeDetails$offset)
+  
   #Set up regression coefficients
   if(conf$covDetection== "vessel"){
     X_g_obs = mgcv::gam(lon ~  -1 + vessel  , data = d[which(d$code==2),],fit =FALSE)$X
@@ -92,7 +95,7 @@ setData = function(d,predAreaUTM, conf){
               X_z_pred = X_z_pred,
               g_function = conf$g_function, #Which detection function to use
               penalize = conf$penalizeMMPP,
-              area = as.numeric(sf::st_area(predAreaUTM)),
+              areas = as.numeric(discretized_areas$area),
               abortLeft = d$abortLeft,
               abortRight = d$abortRight,
               matern_intensity = conf$matern_intensity,
