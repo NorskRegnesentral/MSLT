@@ -38,36 +38,22 @@ setData = function(d,predAreaUTM, conf){
   d$abortRight[is.na(d$Stbd)] =1
 
   #Define aundance integration points
-  points = sf::st_make_grid(predAreaUTM,cellsize=c(conf$cellsize,conf$cellsize),what="centers")
-  points = sf::st_as_sf(points)
-  points = sf::st_join(points,predAreaUTM,left=FALSE)
+  grid <- sf::st_make_grid(predAreaUTM, cellsize = conf$cellsize)
+  grid_sf <- sf::st_as_sf(grid)
+  discretized_areas <- sf::st_intersection(grid_sf, predAreaUTM)#Intersection to find overlapping areas
+  discretized_areas$area <- sf::st_area(discretized_areas)
+  points=sf::st_centroid(sf::st_geometry(discretized_areas))
   predData = data.frame(sf::st_coordinates(points))
   names(predData) = c("utmx", "utmy")
-  
-  #Define points used to make mesh
-  done = FALSE
-  dummy = sqrt(as.numeric(sf::st_area(predAreaUTM)))/10
-  while(!done){
-    meshPoints = sf::st_make_grid(predAreaUTM,cellsize=c(dummy,dummy),what="centers")
-    meshPoints = sf::st_as_sf(meshPoints)
-    meshPoints = sf::st_join(meshPoints,predAreaUTM,left=FALSE)
-    meshPoints = data.frame(sf::st_coordinates(meshPoints))
-    names(meshPoints) = c("utmx", "utmy")
-    if(dim(meshPoints)[1]>20000){
-      done = TRUE #More than 20000 points in area to define mesh on
-    }else{
-      dummy = dummy*0.75  
-    }
-  }
 
   
   buffer = sf::st_buffer(predAreaUTM,conf$buffer)
-  mesh <- fmesher::fm_mesh_2d(meshPoints,
+  mesh <- fmesher::fm_mesh_2d(obsUTM,
                               max.edge =conf$spdeDetails$max.edge,
                               boundary = buffer,
                               cutoff = conf$spdeDetails$cutoff,
-                              offset = c(1,-0.1)
-  )
+                              min.angle = conf$spdeDetails$min.angle,
+                              offset = conf$spdeDetails$offset)
 
   #Set up regression coefficients
   if(conf$covDetection== "vessel"){
@@ -109,7 +95,7 @@ setData = function(d,predAreaUTM, conf){
               X_z_pred = X_z_pred,
               g_function = conf$g_function, #Which detection function to use
               penalize = conf$penalizeMMPP,
-              area = as.numeric(sf::st_area(predAreaUTM)),
+              areas = as.numeric(discretized_areas$area),
               abortLeft = d$abortLeft,
               abortRight = d$abortRight,
               matern_intensity = conf$matern_intensity,

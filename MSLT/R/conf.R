@@ -12,7 +12,10 @@
 #' @param pcPriorsSD_intensity pc-prior group abundance intensity marginal standard deviation
 #' @param pcPriorsRange_size pc-prior group size intensity range
 #' @param pcPriorsSD_size pc-prior group size intensity marginal standard deviation
-#' @param spdeDetails Details for constructing mesh with use of INLA
+#' @param cutoff Details for constructing mesh with use of fmesher::fm_mesh_2d
+#' @param max.edge Details for constructing mesh with use of fmesher::fm_mesh_2d
+#' @param min.angle Details for constructing mesh with use of fmesher::fm_mesh_2d
+#' @param offset Details for constructing mesh with use of fmesher::fm_mesh_2d
 #' @param applyPodSize 1: Pod size is included, 0: Not included
 #' @param podSizeDist 1:poisson, 2:negative binomial group size
 #' @param independentPodSize 1: Size independent of intensity
@@ -36,15 +39,18 @@ defConf = function(matern_intensity = 1,
                    pcPriorsRange_size = c(300,0.1),
                    pcPriorsSD_size = c(1,0.1),
                    penalizeMMPP = c(1,0.1),
-                   spdeDetails = list(cutoff = 30,max.edge = c(80,150)),
+                   cutoff = 30,
+                   max.edge = c(80,150),
+                   min.angle = 18,
+                   offset = c(1,-0.1),
                    applyPodSize = 1,
                    podSizeDist = 2,
                    independentPodSize = 1 ,
                    dependentPodSize = c(0,1),
-                   cellsize = 25,
+                   cellsize = 50,
                    UTMproj = sf::st_crs("+proj=utm +zone=22 +units=km"),
                    LatLonProj =  sf::st_crs("+proj=longlat +datum=WGS84"),
-                   buffer = 80
+                   buffer = 0
                    ){
   conf = list()
   conf$matern_intensity = matern_intensity 
@@ -61,6 +67,7 @@ defConf = function(matern_intensity = 1,
   conf$pcPriorsSD_size = pcPriorsSD_size
   conf$usePCpriors = usePCpriors
   conf$penalizeMMPP = penalizeMMPP
+  spdeDetails = list(cutoff = cutoff,max.edge = max.edge,min.angle = min.angle,offset = offset)
   conf$spdeDetails = spdeDetails
   conf$applyPodSize = applyPodSize
   conf$podSizeDist = podSizeDist

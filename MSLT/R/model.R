@@ -38,9 +38,9 @@ mslt = function(par){
     y_i = distObs[i];
     # We do NOT include normalizing constant "eshw" (included later)
     if(g_function==1){
-      nll = nll - log(g_half_normal(y_i,z_i,beta_g));
+      nll = nll - Term(log(g_half_normal(y_i,z_i,beta_g)));
     }else if(g_function==2){
-      nll = nll - log(g_hazard(y_i,z_i,beta_g, bHazard));
+      nll = nll - Term(log(g_hazard(y_i,z_i,beta_g, bHazard)));
     }
   }
   
@@ -95,16 +95,16 @@ mslt = function(par){
         P[1,2] = P[1,2]* c_mmpp*exp(Z_transect_endpoints[i]);
       }
       if(code[i]!=0){
-        nll = nll- log(sum(P));
+        nll = nll- Term(log(sum(P)));
         P = P/sum(P); #  Renormalize probability after event.
       }
     }else{
       if(code[i]>0){
         lambda = exp(Z_transect[i])*esw;  # Low Poisson rate
-        nll = nll + lambda*lineIntegralDelta[i];
+        nll = nll + Term(lambda*lineIntegralDelta[i]);
       }
       if(code[i]==2){
-        nll = nll - Z_transect_endpoints[i]; 
+        nll = nll - Term(Z_transect_endpoints[i]); 
       }
     }
   }
@@ -141,11 +141,11 @@ mslt = function(par){
     }
     for(i in 1:nObs){
       if(podSizeDist==1){
-        nll = nll - dpois(size[i],linPredSize[i], TRUE) - log(1-dpois(0,linPredSize[i]));
+        nll = nll - Term(dpois(size[i],linPredSize[i], TRUE) - log(1-dpois(0,linPredSize[i])));
       }else{
         sizeNB = exp(logSizeNB[1]);
         varNB = linPredSize[i] + linPredSize[i]*linPredSize[i]/sizeNB;
-        nll = nll - (RTMB::dnbinom2(size[i], linPredSize[i],varNB ,log = TRUE)- log(1-RTMB::dnbinom2(0,linPredSize[i],varNB, log = FALSE)));
+        nll = nll - Term((RTMB::dnbinom2(size[i], linPredSize[i],varNB ,log = TRUE)- log(1-RTMB::dnbinom2(0,linPredSize[i],varNB, log = FALSE))));
       }
     }
     for(i in 1:length(linPred)){
@@ -179,7 +179,7 @@ mslt = function(par){
   }
   
   
-  abundance = area*sum(linPred)/length(linPred);
+  abundance = sum(areas*linPred);
   logAbundance = log(abundance);
   RTMB::ADREPORT(logAbundance);
   

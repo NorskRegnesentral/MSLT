@@ -4,15 +4,17 @@
 #' @param par parameter list  returned by \code{\link{setPar}}
 #' @param conf model configurations list  returned by \code{\link{defConf}}
 #' @param map map object used by TMB to couple and remove parameters
+#' @param ridge.correct Activates ridge.correct in MakeADFun
 #' @param ... additional parameters passed to sdreport 
 #' @return fitted model
 #' @export
-fitMSLT = function(data,par,conf,rel.tol=1e-10,map = setMap(conf, par),...){
+fitMSLT = function(data,par,conf,rel.tol=1e-10,map = setMap(conf, par),ridge.correct = FALSE,...){
 
   #Estimating the model and extract results-------------
   startTime <- Sys.time()
+  Term = RTMB:::Term
   if(conf$mmpp==1){
-    obj <- RTMB::MakeADFun(mslt, par, random=c("x_intensity","x_size"), profile = c("log_c_mmpp"), map = map)	
+      obj <- RTMB::MakeADFun(mslt, par, random=c("x_intensity","x_size"), profile = c("log_c_mmpp"), map = map,ridge.correct = ridge.correct)	
   }else{
     obj <- RTMB::MakeADFun(mslt, par, random=c("x_intensity","x_size"), map = map)	
   }

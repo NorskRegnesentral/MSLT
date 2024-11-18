@@ -18,15 +18,18 @@ defConf(
   pcPriorsRange_size = c(300, 0.1),
   pcPriorsSD_size = c(1, 0.1),
   penalizeMMPP = c(1, 0.1),
-  spdeDetails = list(cutoff = 30, max.edge = c(80, 150)),
+  cutoff = 30,
+  max.edge = c(80, 150),
+  min.angle = 18,
+  offset = c(1, -0.1),
   applyPodSize = 1,
   podSizeDist = 2,
   independentPodSize = 1,
   dependentPodSize = c(0, 1),
-  cellsize = 25,
+  cellsize = 50,
   UTMproj = sf::st_crs("+proj=utm +zone=22 +units=km"),
   LatLonProj = sf::st_crs("+proj=longlat +datum=WGS84"),
-  buffer = 80
+  buffer = 0
 )
 }
 \arguments{
@@ -54,7 +57,13 @@ defConf(
 
 \item{pcPriorsSD_size}{pc-prior group size intensity marginal standard deviation}
 
-\item{spdeDetails}{Details for constructing mesh with use of INLA}
+\item{cutoff}{Details for constructing mesh with use of fmesher::fm_mesh_2d}
+
+\item{max.edge}{Details for constructing mesh with use of fmesher::fm_mesh_2d}
+
+\item{min.angle}{Details for constructing mesh with use of fmesher::fm_mesh_2d}
+
+\item{offset}{Details for constructing mesh with use of fmesher::fm_mesh_2d}
 
 \item{applyPodSize}{1: Pod size is included, 0: Not included}
 
