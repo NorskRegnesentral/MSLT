@@ -13,7 +13,7 @@ mslt = function(par){
   
   nll = 0.0;
   "[<-" = RTMB::ADoverload("[<-") #Problem with R's byte compiler.
-  
+  RTMB::TapeConfig(atomic="disable")
   #Precision matrix Q, e.g. Lindgren + Rue 2015 JSS p4:
   Q_intensity = kappa[1]^4 * spdeMatrices$M0 + 2 * kappa[1]^2 * spdeMatrices$M1 + spdeMatrices$M2
   
