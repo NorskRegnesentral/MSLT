@@ -37,10 +37,18 @@ mslt = function(par){
     z_i = X_g_obs[i,];
     y_i = distObs[i];
     # We do NOT include normalizing constant "eshw" (included later)
-    if(g_function==1){
-      nll = nll - Term(log(g_half_normal(y_i,z_i,beta_g)));
-    }else if(g_function==2){
-      nll = nll - Term(log(g_hazard(y_i,z_i,beta_g, bHazard)));
+    if(ridgeCorrectObservations[i]==1){
+      if(g_function==1){
+        nll = nll - Term(log(g_half_normal(y_i,z_i,beta_g)));
+      }else if(g_function==2){
+        nll = nll - Term(log(g_hazard(y_i,z_i,beta_g, bHazard)));
+      }
+    }else{
+      if(g_function==1){
+        nll = nll - log(g_half_normal(y_i,z_i,beta_g));
+      }else if(g_function==2){
+        nll = nll - log(g_hazard(y_i,z_i,beta_g, bHazard));
+      } 
     }
   }
   
@@ -95,7 +103,11 @@ mslt = function(par){
         P[1,2] = P[1,2]* c_mmpp*exp(Z_transect_endpoints[i]);
       }
       if(code[i]!=0){
-        nll = nll- Term(log(sum(P)));
+        if(ridgeCorrectLine[i]==1){
+          nll = nll- Term(log(sum(P)));
+        }else{
+          nll = nll- log(sum(P));
+        }
         P = P/sum(P); #  Renormalize probability after event.
       }
     }else{

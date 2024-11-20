@@ -115,6 +115,10 @@ setData = function(d,predAreaUTM, conf){
               meanGroupFigure = 0
   )
 
+  #Needed for ridge correct only parts of data
+  data$ridgeCorrectLine = rep(0,dim(data$AalongLines)[1])
+  data$ridgeCorrectObservations = rep(0,dim(data$AObs)[1])
+  
   #Add attributes that is not needed in the TMB program, but neat to have
   obsLatLon = data.frame(sf::st_coordinates(obsLatLon))
   colnames(obsLatLon) = c("lon","lat")
