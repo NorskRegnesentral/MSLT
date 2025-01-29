@@ -7,7 +7,13 @@ mslt = function(par){
   
   if(exists("shared_env_simulations")){
     data = shared_env_simulations$data
-  } 
+  }
+  
+  if(sum(data$ridgeCorrectLine)==0){#Investigating solving correlation issues using ridge.correct, This is work in progress
+    Term = function(f)f 
+  }else{
+    Term = RTMB:::Term #Using ridge.correct for some of the observations
+  }
   
   RTMB::getAll(par,data)
   sigma = exp(log_sigma);
@@ -18,7 +24,8 @@ mslt = function(par){
   
   nll = 0.0;
   "[<-" = RTMB::ADoverload("[<-") #Problem with R's byte compiler.
-  RTMB::TapeConfig(atomic="disable")
+  RTMB::TapeConfig(atomic="disable") #Makes %*% more computationally efficient
+  
   #Precision matrix Q, e.g. Lindgren + Rue 2015 JSS p4:
   Q_intensity = kappa[1]^4 * spdeMatrices$M0 + 2 * kappa[1]^2 * spdeMatrices$M1 + spdeMatrices$M2
   
@@ -137,7 +144,6 @@ mslt = function(par){
     nll = nll- RTMB::dexp(c_mmpp,penalize[2],TRUE);
   }
   
-  
   #Abundance
   linPred =   exp(X_z_pred*beta_z + Apred%*%x_intensity) * k_psi;
   
@@ -150,12 +156,9 @@ mslt = function(par){
       x_size = x_size/sqrt(scaleS_size) *sigma[2];
     }
     
-    if(independentPodSize==1){
-      linPredSize =  exp(beta_size[1] + AObs%*%x_size);
-      linPredSizePredicion =   exp(beta_size[1] + Apred%*%x_size);
-    }else{
-      #TODO: Dependence between spatial effect of group size and intensity
-    }
+    linPredSize =  exp(beta_size[1] + AObs%*%x_size);
+    linPredSizePredicion =   exp(beta_size[1] + Apred%*%x_size);
+
     for(i in 1:nObs){
       if(podSizeDist==1){
         nll = nll - Term(dpois(size[i],linPredSize[i], TRUE) - log(1-dpois(0,linPredSize[i])));
@@ -171,30 +174,12 @@ mslt = function(par){
       }else{
         sizeNB = exp(logSizeNB[1]);
         varNB = linPredSizePredicion[i] + linPredSizePredicion[i]*linPredSizePredicion[i]/sizeNB;
-        #Something not working with using dnbinom2, write the zero probability manually
-        #linPred[i] = linPred[i]*(linPredSizePredicion[i]/(1-RTMB::dnbinom2(0, linPredSizePredicion[i], varNB,log = FALSE)));
         p = linPredSizePredicion[i]/ varNB
         r = linPredSizePredicion[i]^2 / (varNB-linPredSizePredicion[i])
         linPred[i] = linPred[i]*(linPredSizePredicion[i]/(1-p^(r))); 
       }
     }
   }
-  
-  if(spatialBiasCorFigure==1){ #Needed when producing spatial bias corrected plots in paper, removed by defauls because requires a couple of minutes computation time
-     linPredFigure =   exp(beta_z[1] + x_intensity) * k_psi;
-     linPredFigureSize =  exp(beta_size[1] + x_size);
-    for(i in 1:length(linPredFigure)){
-      sizeNB = exp(logSizeNB[1]);
-      varNB = linPredFigureSize[i] + linPredFigureSize[i]*linPredFigureSize[i]/sizeNB;
-      #Something not working with using dnbinom2, write the zero probability manually
-      #linPredFigure[i] = linPredFigure[i]*(linPredFigureSize[i]/(1-RTMB::dnbinom2(0, linPredFigureSize[i], varNB,log = FALSE)));
-      p = linPredFigureSize[i]/ varNB
-      r = linPredFigureSize[i]^2 / (varNB-linPredFigureSize[i])
-      linPredFigure[i] = linPredFigure[i]*(linPredFigureSize[i]/(1-p^(r))); 
-    }
-     RTMB::ADREPORT(linPredFigure); 
-  }
-  
   
   abundance = sum(areas*linPred);
   logAbundance = log(abundance);
@@ -203,14 +188,25 @@ mslt = function(par){
   log_range_psi = log(-log(0.1)/sum(mu));
   RTMB::ADREPORT(log_range_psi);
   
+  if(spatialBiasCorFigure==1){ #Needed when producing spatial bias corrected plots in paper, removed by defauls because requires a couple of minutes computation time
+    linPredFigure =   exp(beta_z[1] + x_intensity) * k_psi;
+    linPredFigureSize =  exp(beta_size[1] + x_size);
+    for(i in 1:length(linPredFigure)){
+      sizeNB = exp(logSizeNB[1]);
+      varNB = linPredFigureSize[i] + linPredFigureSize[i]*linPredFigureSize[i]/sizeNB;
+      p = linPredFigureSize[i]/ varNB
+      r = linPredFigureSize[i]^2 / (varNB-linPredFigureSize[i])
+      linPredFigure[i] = linPredFigure[i]*(linPredFigureSize[i]/(1-p^(r))); 
+    }
+    RTMB::ADREPORT(linPredFigure); 
+  }
+  
   if(meanGroupFigure==1){
     if(applyPodSize==1){
       sizeNB = exp(logSizeNB[1]);
       meanGroup = exp(beta_size[1]+ x_size);
       for(i in 1: length(x_size)){
         varNB = meanGroup[i] + meanGroup[i]*meanGroup[i]/sizeNB;
-        #Something not working with using dnbinom2, write the zero probability manually
-        #meanGroup[i] = meanGroup[i]/(1-RTMB::dnbinom2(0, meanGroup[i], varNB));
         p = meanGroup[i]/ varNB
         r = meanGroup[i]^2 / (varNB-meanGroup[i])
         meanGroup[i] = meanGroup[i]/(1-p^(r)); 
