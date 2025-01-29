@@ -4,6 +4,11 @@
 #' @return Liklihood of MSLT model given parameters
 #' @export
 mslt = function(par){
+  
+  if(exists("shared_env_simulations")){
+    data = shared_env_simulations$data
+  } 
+  
   RTMB::getAll(par,data)
   sigma = exp(log_sigma);
   kappa = exp(log_kappa);
