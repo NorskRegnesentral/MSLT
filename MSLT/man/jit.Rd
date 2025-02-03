@@ -7,14 +7,16 @@
 jit(run, sd = 0.2, nojit = 50, ncores = 2)
 }
 \arguments{
-\item{run}{fitted model returned by \code{\link{fitMSLT}}}
+\item{run}{Fitted model returned by \code{\link{fitMSLT}}}
 
-\item{sd}{standard deviation in jitter analysis}
+\item{sd}{Standard deviation in jitter analysis}
 
-\item{ncores}{number of cores used in jitter analysis}
+\item{nojit}{Number of sets of starting values}
+
+\item{ncores}{Number of cores used in jitter analysis}
 }
 \value{
-fitted model
+Fitted model
 }
 \description{
 jit

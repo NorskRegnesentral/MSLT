@@ -8,7 +8,7 @@ partable<-function(run,CI_level=0.95){
 
   CI_L <- (1-CI_level)/2
   CI_U <- 1-CI_L
-  qq = c(qnorm(CI_L),qnorm(CI_U))
+  qq = c(stats::qnorm(CI_L),stats::qnorm(CI_U))
   pl = run$pl
   plSd = run$plSd
 
@@ -72,7 +72,7 @@ partable<-function(run,CI_level=0.95){
 partable_derived <-function(run,sdrep_bc = NULL,CI_level=0.95){
   CI_L <- (1-CI_level)/2
   CI_U <- 1-CI_L
-  qq = c(qnorm(CI_L),qnorm(CI_U))
+  qq = c(stats::qnorm(CI_L),stats::qnorm(CI_U))
   
   range_int = c(sqrt(8)/exp(run$pl$log_kappa[1]),sqrt(8)/exp(run$pl$log_kappa[1] +  rev(qq)*run$plSd$log_kappa[1]))
   

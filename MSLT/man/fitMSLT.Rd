@@ -13,6 +13,8 @@ fitMSLT(data, par, conf, rel.tol = 1e-10, map = setMap(conf, par), ...)
 
 \item{conf}{model configurations list  returned by \code{\link{defConf}}}
 
+\item{rel.tol}{rel.tol in nlminb}
+
 \item{map}{map object used by TMB to couple and remove parameters}
 
 \item{...}{additional parameters passed to sdreport}

@@ -1,6 +1,7 @@
 ##' logLik.mslt 
 ##'
 ##' @param object fitted model retuned by \code{\link{fitMSLT}} 
+##' @param ... Extra argument
 ##' @details Returns the log-likelihood and the number of parameters 
 ##' @export
 logLik.mslt<-function(object, ...){
@@ -17,7 +18,8 @@ logLik.mslt<-function(object, ...){
 
 ##' Print mslt object
 ##' 
-##' @param  x fitted model retuned by \code{\link{fitMSLT}} to print
+##' @param  x Fitted model retuned by \code{\link{fitMSLT}}
+##' @param ... Extra argument
 ##' @details Print log-likelihood and the main convergence criteria
 ##' @export
 print.mslt<-function(x, ...){
@@ -25,11 +27,11 @@ print.mslt<-function(x, ...){
 }
 
 
-##' Print jit
+##' print.jit
 ##' 
-##' @method print jit
-##' @param  jit list with the jitter runs
-##' @details Print jit
+##' @param  jit List with the jitter runs
+##' @param ... Extra argument
+##' @details Print results of the jitter analysis; Difference in parameters, abundance and log likelihood
 ##' @export
 print.jit<-function(jit,...){
   j2 = list()
@@ -48,7 +50,7 @@ print.jit<-function(jit,...){
   scale = 1/((4*3.14159265)*exp(run$pl$log_kappa*2))
 
   maxabsdiff <- apply(abs(do.call(cbind, lapply(j2, function(f)unlist(f$pl)-unlist(run$pl)))),1,max)
-  maxlist <- relist(maxabsdiff, run$pl)
+  maxlist <- utils::relist(maxabsdiff, run$pl)
   ret <- as.data.frame(unlist(lapply(maxlist,function(x)if(length(x)>0)max(x) else NULL)))
   logLik <- max(abs(unlist(lapply(j2, logLik))-logLik(run)))
   abundance <- max(unlist(lapply(j2, function(f)abs(f$rl$logAbundance-run$rl$logAbundance))))

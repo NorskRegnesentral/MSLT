@@ -57,6 +57,8 @@ defConf(
 
 \item{pcPriorsSD_size}{pc-prior group size intensity marginal standard deviation}
 
+\item{penalizeMMPP}{Penalization on MMPP parameter c: First element 1/0:yes/no. The second element is the rate in the exponential penalization.}
+
 \item{cutoff}{Details for constructing mesh with use of fmesher::fm_mesh_2d}
 
 \item{max.edge}{Details for constructing mesh with use of fmesher::fm_mesh_2d}

@@ -7,7 +7,9 @@
 \method{print}{mslt}(x, ...)
 }
 \arguments{
-\item{x}{fitted model retuned by \code{\link{fitMSLT}} to print}
+\item{x}{Fitted model retuned by \code{\link{fitMSLT}}}
+
+\item{...}{Extra argument}
 }
 \description{
 Print mslt object

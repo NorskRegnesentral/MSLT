@@ -26,7 +26,7 @@ setPar = function(data,conf){
     if(conf$independentPodSize==1){
       par$beta_size = 0
     }else{
-      tt = uniroot(function(x){
+      tt = stats::uniroot(function(x){
         mean(data$size) - x/(1-exp(-x))
       }, interval = c(0.01,10))$root
       par$beta_size = c(log(tt),0);

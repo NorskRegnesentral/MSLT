@@ -12,6 +12,7 @@
 #' @param pcPriorsSD_intensity pc-prior group abundance intensity marginal standard deviation
 #' @param pcPriorsRange_size pc-prior group size intensity range
 #' @param pcPriorsSD_size pc-prior group size intensity marginal standard deviation
+#' @param penalizeMMPP Penalization on MMPP parameter c: First element 1/0:yes/no. The second element is the rate in the exponential penalization.
 #' @param cutoff Details for constructing mesh with use of fmesher::fm_mesh_2d
 #' @param max.edge Details for constructing mesh with use of fmesher::fm_mesh_2d
 #' @param min.angle Details for constructing mesh with use of fmesher::fm_mesh_2d

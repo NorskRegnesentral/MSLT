@@ -8,6 +8,8 @@
 }
 \arguments{
 \item{object}{fitted model retuned by \code{\link{fitMSLT}}}
+
+\item{...}{Extra argument}
 }
 \description{
 logLik.mslt

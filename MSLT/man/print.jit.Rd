@@ -2,16 +2,18 @@
 % Please edit documentation in R/utils.R
 \name{print.jit}
 \alias{print.jit}
-\title{Print jit}
+\title{print.jit}
 \usage{
 \method{print}{jit}(jit, ...)
 }
 \arguments{
-\item{jit}{list with the jitter runs}
+\item{jit}{List with the jitter runs}
+
+\item{...}{Extra argument}
 }
 \description{
-Print jit
+print.jit
 }
 \details{
-Print jit
+Print results of the jitter analysis; Difference in parameters, abundance and log likelihood
 }
