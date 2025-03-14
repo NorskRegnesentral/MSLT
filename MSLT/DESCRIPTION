@@ -14,4 +14,4 @@ Imports: TMB, RcppEigen,mgcv,fmesher,sf,parallel
 LinkingTo: TMB, RcppEigen
 URL: https://github.com/NorskRegnesentral/MSLT
 BugReports: https://github.com/NorskRegnesentral/MSLT/issues
-RoxygenNote: 7.3.1
+RoxygenNote: 7.3.2

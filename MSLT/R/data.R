@@ -3,9 +3,10 @@
 #' @param d Data provided by user
 #' @param predAreaUTM prediction area provided by user
 #' @param conf model configurations list  returned by \code{\link{defConf}}
+#' @param digits Number of digits in line transect integration points and in prediction area. Sometimes needed because different OS may result in slightly different mesh because of numerical issues with small numbers.
 #' @return data list used by TMB
 #' @export
-setData = function(d,predAreaUTM, conf){
+setData = function(d,predAreaUTM, conf, digits =6){
 
   if(conf$detectionTrunc>0){
     ii = which(d$perpDist>conf$detectionTrunc & d$code==2)
@@ -19,6 +20,13 @@ setData = function(d,predAreaUTM, conf){
   obsLatLon <- sf::st_as_sf(coords, coords = c("lon", "lat"),crs="+proj=longlat") 
   obsUTM <- sf::st_transform(obsLatLon, conf$UTMproj)
   obsUTM = sf::st_coordinates(obsUTM)
+  
+  #Different OS sometimes result in slightly different mesh because of rounding issues
+  obsUTM = round(obsUTM,digits) 
+  coords <- sf::st_coordinates(predAreaUTM)
+  predAreaUTMTmp <- sf::st_polygon(list(round(coords[,1:2], digits = digits)))  # Adjust 'digits' as needed
+  predAreaUTM <- sf::st_sf(geometry = sf::st_sfc(predAreaUTMTmp), crs=conf$UTMproj$input)
+  
   d$utmy = obsUTM[,2]
   d$utmx = obsUTM[,1]
   
@@ -54,7 +62,6 @@ setData = function(d,predAreaUTM, conf){
                               cutoff = conf$spdeDetails$cutoff,
                               min.angle = conf$spdeDetails$min.angle,
                               offset = conf$spdeDetails$offset)
-  
   #Set up regression coefficients
   if(conf$covDetection== "vessel"){
     X_g_obs = mgcv::gam(lon ~  -1 + vessel  , data = d[which(d$code==2),],fit =FALSE)$X

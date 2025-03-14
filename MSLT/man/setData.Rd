@@ -4,7 +4,7 @@
 \alias{setData}
 \title{setData}
 \usage{
-setData(d, predAreaUTM, conf)
+setData(d, predAreaUTM, conf, digits = 6)
 }
 \arguments{
 \item{d}{Data provided by user}
@@ -12,6 +12,8 @@ setData(d, predAreaUTM, conf)
 \item{predAreaUTM}{prediction area provided by user}
 
 \item{conf}{model configurations list  returned by \code{\link{defConf}}}
+
+\item{digits}{Number of digits in line transect integration points and in prediction area. Sometimes needed because different OS may result in slightly different mesh because of numerical issues with small numbers.}
 }
 \value{
 data list used by TMB
