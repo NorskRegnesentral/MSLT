@@ -23,7 +23,7 @@ setData = function(d,predAreaUTM, conf, digits =6){
   
   #Different OS sometimes result in slightly different mesh because of rounding issues
   obsUTM = round(obsUTM,digits) 
-  if(st_geometry_type(predAreaUTM) == "POLYGON"){
+  if(sf::st_geometry_type(predAreaUTM) == "POLYGON"){
     coords <- sf::st_coordinates(predAreaUTM)
     predAreaUTMTmp <- sf::st_polygon(list(round(coords[,1:2], digits = digits))) 
     predAreaUTM <- sf::st_sf(geometry = sf::st_sfc(predAreaUTMTmp), crs=conf$UTMproj$input)
