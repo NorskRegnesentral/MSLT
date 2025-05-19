@@ -65,7 +65,6 @@ jit = function(run, sd = 0.2, nojit = 50,ncores = 2){
     p
   })
 
-
   if(ncores>1){
     cl <- parallel::makeCluster(ncores) #set up nodes
     on.exit(parallel::stopCluster(cl)) #shut it down
@@ -73,14 +72,26 @@ jit = function(run, sd = 0.2, nojit = 50,ncores = 2){
     parallel::clusterExport(cl, varlist=c("lib.ver","run"), envir=environment())
     parallel::clusterEvalQ(cl, {library(mslt)})
     runs <- parallel::parLapply(cl, pars, function(p){
-      rr = fitMSLT(run$data,  p,run$conf)
-      TMB::FreeADFun(rr$obj)#Free memory from C-side
+      rr = try({
+        fitMSLT(run$data,  p,run$conf)
+        })
+      if(inherits(rr, "try-error")| is.na(rr[[1]])[1]){
+        return(NA) 
+      }else{
+        TMB::FreeADFun(rr$obj)#Free memory from C-side
+      }
       rr
     })
   } else {
     runs <- lapply(pars, function(p){
-      rr = fitMSLT(run$data,  p, run$conf)
-      TMB::FreeADFun(rr$obj)#Free memory from C-side
+      rr = try({
+        fitMSLT(run$data,  p,run$conf)
+        })
+      if(inherits(rr, "try-error")| is.na(rr[[1]])[1]){
+        return(NA) 
+      }else{
+        TMB::FreeADFun(rr$obj)#Free memory from C-side
+      }
       rr
       })
   }
