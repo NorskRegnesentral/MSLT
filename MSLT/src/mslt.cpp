@@ -273,16 +273,17 @@ Type objective_function<Type>::operator() (){
 
       }
     }
-    //Bias correct figure in paper
+    //Bias correct figure in paper; ADREPORT spatial estimated intensity, including group size
     if(spatialBiasCorFigure==1){ //Needed when producing spatial bias corrected plots in paper, removed by defauls because requires a couple of minutes computation time
-      vector<Type> linPredFigure =   exp(beta_z(0) + x_intensity) * k_psi;
-      vector<Type> linPredFigureSize =  exp(beta_size(0) + x_size);
-      for(int i = 0; i< linPredFigure.size(); ++i){
+      vector<Type> spatialEstimate =  x_intensity*0;
+      vector<Type> spatialGroupEstimate =   exp(beta_z(0) + x_intensity) * k_psi;
+      vector<Type> spatialGroupSizeEstimate =  exp(beta_size(0) + x_size);
+      for(int i = 0; i< spatialEstimate.size(); ++i){
         sizeNB = exp(logSizeNB(0));
-        varNB = linPredFigureSize(i) + linPredFigureSize(i)*linPredFigureSize(i)/sizeNB;
-        linPredFigure(i) = linPredFigure(i)*(linPredFigureSize(i)/(1-dnbinom2(Type(0), linPredFigureSize(i), varNB)));
+        varNB = spatialGroupSizeEstimate(i) + spatialGroupSizeEstimate(i)*spatialGroupSizeEstimate(i)/sizeNB;
+        spatialEstimate(i) = spatialGroupEstimate(i)*(spatialGroupSizeEstimate(i)/(1-dnbinom2(Type(0), spatialGroupSizeEstimate(i), varNB)));
       }
-      ADREPORT(linPredFigure); 
+      ADREPORT(spatialEstimate); 
     }
   }
   
