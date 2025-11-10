@@ -1,0 +1,22 @@
+
+Here is a description of each colum in the line transect survey data (lineTransectData.rds):
+
+"code"           Description of what the row represents: 0) start of a transect. 1) no fin whale was detected. 2) a fin whale group was detected.
+
+"time"           Time of recording (POSIXct).  
+
+"lon"            Longitude of this point on the transect (numeric). 
+
+"lat"            Latitude of this point on the transect (numeric).
+
+"vessel"         Name of the vessel (either "KPH" "CDH" or "RRS").
+
+"Port"           Observer on the port side (string); NA if no observer is present.
+
+"Stbd"           Observer on the starboard side (string); NA if no observer is present.
+
+"dist"           Distance in kilometers with sampling effort from the previous row (numeric); defined as zero when the row represents the start of a transect.
+
+"size"           Number of animals in the detected group (numeric); NA if no group is detected.
+
+"perpDist"  	 Perpendicular distance in kilometers to the detected whale group (numeric).
