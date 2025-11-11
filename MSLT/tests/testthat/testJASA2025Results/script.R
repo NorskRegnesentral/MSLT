@@ -22,18 +22,18 @@ run = fitMSLT(data,par,conf)
 
 
 resultsOut = list()
-resultsOut$abundance = run$rl$abundance
+resultsOut$logAbundance = run$rl$logAbundance
 resultsOut$objective = run$opt$objective
 
 
 load("testJASA2025Results/resultsExp.RData")
-expect_equal(resultsOut$abundance, resultsExp$abundance,tolerance = 1e-6)
+expect_equal(resultsOut$logAbundance, resultsExp$logAbundance,tolerance = 1e-6)
 expect_equal(resultsOut$objective, resultsExp$objective,tolerance = 1e-6)
 
 
 if(FALSE){
   resultsExp = list()
-  resultsExp$abundance_n = run$rl$abundance
+  resultsExp$logAbundance = run$rl$logAbundance
   resultsExp$objective  = run$opt$objective
   save(resultsExp,file = "testJASA2025Results/resultsExp.RData")
 }
