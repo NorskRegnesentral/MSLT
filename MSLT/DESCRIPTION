@@ -15,3 +15,6 @@ LinkingTo: TMB, RcppEigen
 URL: https://github.com/NorskRegnesentral/MSLT
 BugReports: https://github.com/NorskRegnesentral/MSLT/issues
 RoxygenNote: 7.3.2
+Suggests: 
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
