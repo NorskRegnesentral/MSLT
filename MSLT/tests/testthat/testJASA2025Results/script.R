@@ -26,7 +26,7 @@ resultsOut$abundance = run$rl$abundance
 resultsOut$objective = run$opt$objective
 
 
-load("testJASA2025Results/data/resultsExp.RData")
+load("testJASA2025Results/resultsExp.RData")
 expect_equal(resultsOut$abundance, resultsExp$abundance,tolerance = 1e-6)
 expect_equal(resultsOut$objective, resultsExp$objective,tolerance = 1e-6)
 
@@ -34,6 +34,6 @@ expect_equal(resultsOut$objective, resultsExp$objective,tolerance = 1e-6)
 if(FALSE){
   resultsExp = list()
   resultsExp$abundance_n = run$rl$abundance
-  resultsExp$abundance  = run$opt$objective
+  resultsExp$objective  = run$opt$objective
   save(resultsExp,file = "testJASA2025Results/resultsExp.RData")
 }
