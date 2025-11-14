@@ -59,18 +59,31 @@ setData = function(d,predAreaUTM, conf, digits =6){
                               cutoff = conf$spdeDetails$cutoff,
                               min.angle = conf$spdeDetails$min.angle,
                               offset = conf$spdeDetails$offset)
-  #Set up regression coefficients
-  if(conf$covDetection== "vessel"){
-    X_g_obs = mgcv::gam(lon ~  -1 + vessel  , data = d[which(d$code==2),],fit =FALSE)$X
-    X_g_left = mgcv::gam(lon ~  -1 + vessel , data = d,fit =FALSE,)$X
-    X_g_right = X_g_left
-  }else{
-    X_g_obs = mgcv::gam(lon ~  1  , data = d[which(d$code==2),],fit =FALSE)$X
-    X_g_left = mgcv::gam(lon ~  1 , data = d,fit =FALSE)$X
-    X_g_right = mgcv::gam(lon ~  1 , data = d,fit =FALSE)$X
+  
+  
+  #Set up regression coefficients for detection 
+  if(conf$covDetection[1] =="" & length(conf$covDetection)==1) {
+    f_det <- lon ~ 1
+  }else {
+    # Check that all requested covariates exist in the data
+    missing_covs <- setdiff(conf$covDetection, names(d))
+    if(length(missing_covs) > 0){
+      stop(
+        "The following detection covariates are not in the data: ",
+        paste(missing_covs, collapse = ", ")
+      )
+    }
+    
+    # Build formula: no intercept + covariates
+    f_det <- as.formula(
+      paste("lon ~ -1 +", paste(conf$covDetection, collapse = " + "))
+    )
   }
+  X_g_obs = mgcv::gam(f_det  , data = d[which(d$code==2),],fit =FALSE)$X
+  X_g_left = mgcv::gam(f_det , data = d,fit =FALSE,)$X
+  X_g_right = X_g_left
 
-
+  
   #Set up regression coefficients for rate
   X_z = mgcv::gam(lon ~  1  , data = d,fit =FALSE)$X
   X_z_pred = mgcv::gam(utmx ~  1 , data = predData,fit =FALSE)$X
