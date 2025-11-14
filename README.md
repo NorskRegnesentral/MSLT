@@ -139,6 +139,8 @@ We can inspect the estimated model parameters reported in Table 1 in https://doi
 run$rep
 ```
 
+We can inspect the derived model parameters reported in Table 2 by calling `partable_derived(run)`. However, we have not yet performed the bias-correction to obtain $\hat{N}_{\text{BC}}$.
+
 
 ### Bias-correction
 Bias correction can be performed like this:
@@ -160,8 +162,6 @@ partable_derived(run,sdrep)
 ```
 
 
-
-
 ## Estimate simpler submodels
 The different submodels can be estimated by modifying the `conf` object accordingly: 
 
@@ -174,4 +174,7 @@ HPP: To estimate the HPP model, set both `conf$mmpp = 0` and `conf$matern_intens
 Only number of groups: To estimate only the number of groups, set `conf$applyPodSize = 0`.
 
 
+## Practical convenient details
+
+All estimated parameters are included in the object `run$pl`. That object has exactly the same format as the initial parameters `par`. Similarly, the standard deviations of the estimated parameters are stored in `run$plSd`. Note that the `run` object includes everything needed to reproduce and inspect the results. For example, the SPDE mesh is located here: `attributes(run$data)$mesh`.
 
