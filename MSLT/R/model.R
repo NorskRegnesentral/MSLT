@@ -104,6 +104,10 @@ mslt = function(par){
       lambda[1] = exp(Z_transect[i])*esw;  # Low Poisson rate
       lambda[2] = c_mmpp*lambda[1];        # High Poisson rate
       
+      lambda_endpoints = c(0,0)
+      lambda_endpoints[1] = exp(Z_transect_endpoints[i])*esw;  # Low Poisson rate
+      lambda_endpoints[2] = c_mmpp*lambda_endpoints[1];        # High Poisson rate
+      
       if(code[i]==0){
         P[1,1] = mu[2]/sum(mu); # // Eq. (3) in (2006)
         P[1,2] = mu[1]/sum(mu); # // Eq. (3) in (2006)
@@ -111,8 +115,9 @@ mslt = function(par){
         P = P%*%expm_mmpp2(lambda,mu,lineIntegralDelta[i]);
       }else if(code[i]==2){# Observation node
         P = P%*%expm_mmpp2(lambda,mu,lineIntegralDelta[i]);
-        P[1,1] = P[1,1]* exp(Z_transect_endpoints[i]);
-        P[1,2] = P[1,2]* c_mmpp*exp(Z_transect_endpoints[i]);
+        P[1,1] = P[1,1]* lambda_endpoints[1];
+        P[1,2] = P[1,2]* lambda_endpoints[2];
+        nll = nll +log(esw);  # This is the normalizing constant that was skipped above in the detection function
       }
       if(code[i]!=0){
         if(ridgeCorrectLine[i]==1){
