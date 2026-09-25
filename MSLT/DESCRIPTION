@@ -10,11 +10,11 @@ Description: Applying data from line transects to fit a thinned latent Gaussian 
 License: GPL-3
 Encoding: UTF-8
 LazyData: true
-Imports: TMB, RcppEigen,mgcv,fmesher,sf,parallel
-LinkingTo: TMB, RcppEigen
+Imports: RTMB,mgcv,fmesher,sf,parallel,numDeriv
+LinkingTo: RTMB
 URL: https://github.com/NorskRegnesentral/MSLT
 BugReports: https://github.com/NorskRegnesentral/MSLT/issues
-RoxygenNote: 7.3.2
+RoxygenNote: 7.3.3
 Suggests: 
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
