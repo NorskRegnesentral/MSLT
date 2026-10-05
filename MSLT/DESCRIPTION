@@ -1,7 +1,7 @@
 Package: mslt
 Title: Multiple Scale Line Transect
 Type: Package
-Version: 0.1.0
+Version: 0.2.0
 Authors@R: c(person(c("Olav","Nikolai"), "Breivik",role=c("aut","cre"), email="olavbr@nr.no"),
 	    person(c("Hans","J."), "Skaug", role = c("aut"),  email="Hans.Skaug@uib.no"),
 	    person(c("Martin"), "Jullum", role = c("aut"),  email="jullum@nr.no"),
