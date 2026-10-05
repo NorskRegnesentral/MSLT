@@ -4,7 +4,15 @@
 \alias{fitMSLT}
 \title{fitMSLT}
 \usage{
-fitMSLT(data, par, conf, rel.tol = 1e-10, map = setMap(conf, par), ...)
+fitMSLT(
+  data,
+  par,
+  conf,
+  rel.tol = 1e-10,
+  map = setMap(conf, par),
+  ridge.correct = FALSE,
+  ...
+)
 }
 \arguments{
 \item{data}{data list returned by \code{\link{setData}}}
@@ -13,9 +21,9 @@ fitMSLT(data, par, conf, rel.tol = 1e-10, map = setMap(conf, par), ...)
 
 \item{conf}{model configurations list  returned by \code{\link{defConf}}}
 
-\item{rel.tol}{rel.tol in nlminb}
-
 \item{map}{map object used by TMB to couple and remove parameters}
+
+\item{ridge.correct}{Activates ridge.correct in MakeADFun}
 
 \item{...}{additional parameters passed to sdreport}
 }
