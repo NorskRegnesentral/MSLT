@@ -13,10 +13,12 @@ fitMSLT = function(data,par,conf,rel.tol=1e-10,map = setMap(conf, par),ridge.cor
   #Estimating the model and extract results-------------
   startTime <- Sys.time()
   Term = RTMB:::Term
+  cmb <- function(f, data) function(p) f(p, data)
+  
   if(conf$mmpp==1){
-      obj <- RTMB::MakeADFun(mslt, par, random=c("x_intensity","x_size"), profile = c("log_c_mmpp"), map = map,ridge.correct = ridge.correct)	
+      obj <- RTMB::MakeADFun(cmb(mslt,data), par, random=c("x_intensity_S","x_intensity_ST","x_size"), profile = c("log_c_mmpp"), map = map,ridge.correct = ridge.correct)	
   }else{
-    obj <- RTMB::MakeADFun(mslt, par, random=c("x_intensity","x_size"), map = map)	
+    obj <- RTMB::MakeADFun(cmb(mslt,data), par, random=c("x_intensity_S","x_intensity_ST","x_size"), map = map)	
   }
   lower = list()
   lower$log_c_mmpp = -10#NB, set lower boundary on jump in MMPP

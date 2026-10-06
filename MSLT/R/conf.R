@@ -1,6 +1,7 @@
 #' defConf
 #' 
-#' @param matern_intensity 1: include spatial effect in group abundance intensity, 0: not 
+#' @param space_intensity_matern 1: include spatial effect in group abundance intensity, 0: not 
+#' @param spaceTime_intensity_maternAR1 1: include spacetime effect in group abundance intensity, 0: not 
 #' @param mmpp  1: include MMPP in group abundance intensity, 0:not
 #' @param detectionTrunc Distance at which detection is truncated
 #' @param matern_size 1: include spatial effect in group size, 0: not
@@ -27,7 +28,8 @@
 #' @param buffer A buffer (in km) outside of the area of interest. The buffer is used when constructing the boundary input to fmesher::fm_mesh_2d
 #' @return Configurations 
 #' @export
-defConf = function(matern_intensity = 1,
+defConf = function(space_intensity_matern = 1,
+                   spaceTime_intensity_maternAR1 = 1,
                    mmpp = 1,
                    detectionTrunc = -1,
                    matern_size = 1,
@@ -54,7 +56,8 @@ defConf = function(matern_intensity = 1,
                    buffer = 0
                    ){
   conf = list()
-  conf$matern_intensity = matern_intensity 
+  conf$space_intensity_matern = space_intensity_matern 
+  conf$spaceTime_intensity_maternAR1 = spaceTime_intensity_maternAR1 
   conf$mmpp = mmpp 
   conf$matern_size = matern_size 
   conf$g_function = g_function 
@@ -106,10 +109,15 @@ setMap = function(conf,par){
   if(conf$g_function==1){
     map$logB = as.factor(NA)
   }
-  if(conf$matern_intensity==0){ #Remove spatial and mmpp effects.
-    map$x_intensity = as.factor(rep(NA,length(par$x_intensity)))
+  if(conf$space_intensity_matern==0 & conf$spaceTime_intensity_matern==0){ #Remove spatial and mmpp effects.
+    map$x_intensity_S = as.factor(rep(NA,length(par$x_intensity_S)))
+    map$x_intensity_ST = as.factor(rep(NA,length(par$x_intensity_ST)))
     map$log_sigma[1] = NA
     map$log_kappa[1] = NA
+  }else if(conf$space_intensity_matern==0){
+    map$x_intensity_S = as.factor(rep(NA,length(par$x_intensity_S)))
+  }else if(conf$spaceTime_intensity_matern==0){
+    map$x_intensity_ST = as.factor(rep(NA,length(par$x_intensity_ST)))
   }
   if(conf$mmpp==0){
     map$log_c_mmpp = as.factor(NA)

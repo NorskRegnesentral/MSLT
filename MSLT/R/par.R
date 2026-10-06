@@ -7,6 +7,7 @@
 setPar = function(data,conf){
   par = list(log_sigma =c(0.5,0.5),
              log_kappa = c(-5,-5),
+             logit_rho = 0,
              beta_g = rep(0.2,dim(data$X_g_obs)[2]),
              beta_z = c(-6,rep(0,dim(data$X_z)[2]-1)),
              beta_size = 0,
@@ -14,7 +15,8 @@ setPar = function(data,conf){
              log_mu =c(-3,-3),
              log_c_mmpp = -1,
              logSizeNB = numeric(),
-             x_intensity = rep(0,attributes(data)$mesh$n),
+             x_intensity_S = rep(0,attributes(data)$mesh$n),
+             x_intensity_ST =  matrix(0, nrow = attributes(data)$mesh$n, ncol = data$nYear),
              x_size = rep(0,attributes(data)$mesh$n))
 
   if(conf$applyPodSize==1){

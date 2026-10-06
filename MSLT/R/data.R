@@ -89,18 +89,36 @@ setData = function(d,predAreaUTM, conf, digits =6){
   X_z_pred = mgcv::gam(utmx ~  1 , data = predData,fit =FALSE)$X
 
   #matrices needed in the SPDE procedure
-  AalongLines <- fmesher::fm_basis(mesh,integrationPointsUTM)
-  AalongLinesEndpoints <- fmesher::fm_basis(mesh,endpoints)
+  AalongLines_S <- fmesher::fm_basis(mesh,integrationPointsUTM)
+  AalongLinesEndpoints_S <- fmesher::fm_basis(mesh,endpoints)
+  AObs_S <- fmesher::fm_basis(mesh,obsUTM[d$code==2,])
   Apred <- fmesher::fm_basis(mesh,as.matrix(predData[,1:2]))
-  AObs <- fmesher::fm_basis(mesh,obsUTM[d$code==2,])
   
   spde <- fmesher::fm_fem(mesh)
   spdeMatrices = list(M0 = spde$c0, M1 = spde$g1,M2 = spde$g2)
+  
+  
+  #Space-time A-matrices
+  AObs_ST = list()
+  AalongLines_ST = list()
+  AalongLinesEndpoints_ST = list()
+  nYear = diff(range(d$year)) + 1
+  for(t in 1:nYear){
+    AObs_ST[[t]] = fmesher::fm_basis(mesh,obsUTM[d$code==2 & d$year == min(d$year) + t-1,])
+    AalongLines_ST[[t]] <- fmesher::fm_basis(mesh,integrationPointsUTM[d$year == min(d$year) + t-1,])
+    AalongLinesEndpoints_ST[[t]] <- fmesher::fm_basis(mesh,endpoints[d$year == min(d$year) + t-1,])
+  }
+  
 
-  data = list(AalongLines = AalongLines,
-              AalongLinesEndpoints = AalongLinesEndpoints,
+  data = list(AalongLines_S = AalongLines_S,
+              AalongLinesEndpoints_S = AalongLinesEndpoints_S,
+              AalongLines_ST = AalongLines_ST,
+              AalongLinesEndpoints_ST = AalongLinesEndpoints_ST,
+              AObs_S = AObs_S,
+              AObs_ST = AObs_ST,
               Apred = Apred,
-              AObs = AObs,
+              year = d$year,
+              nYear = nYear,
               spdeMatrices = spdeMatrices,
               lineIntegralDelta = d$dist,
               code = d$code,
@@ -115,7 +133,8 @@ setData = function(d,predAreaUTM, conf, digits =6){
               areas = as.numeric(discretized_areas$area),
               abortLeft = d$abortLeft,
               abortRight = d$abortRight,
-              matern_intensity = conf$matern_intensity,
+              space_intensity_matern = conf$space_intensity_matern,
+              spaceTime_intensity_maternAR1  = conf$spaceTime_intensity_maternAR1,
               matern_size = conf$matern_size,
               pcPriorsRange_intensity = conf$pcPriorsRange_intensity,
               pcPriorsSD_intensity = conf$pcPriorsSD_intensity,
@@ -133,8 +152,8 @@ setData = function(d,predAreaUTM, conf, digits =6){
   )
 
   #Needed for ridge correct only parts of data
-  data$ridgeCorrectLine = rep(0,dim(data$AalongLines)[1])
-  data$ridgeCorrectObservations = rep(0,dim(data$AObs)[1])
+  data$ridgeCorrectLine = rep(0,dim(data$AalongLines_S)[1])
+  data$ridgeCorrectObservations = rep(0,dim(data$AObs_S)[1])
   
   #Add attributes that is not needed in the TMB program, but neat to have
   obsLatLon = data.frame(sf::st_coordinates(obsLatLon))

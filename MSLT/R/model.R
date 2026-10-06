@@ -3,7 +3,7 @@
 #' @param par parameters in model 
 #' @return Liklihood of MSLT model given parameters
 #' @export
-mslt = function(par){
+mslt = function(par,data){
   
   if(exists("shared_env_simulations")){
     data = shared_env_simulations$data
@@ -18,6 +18,8 @@ mslt = function(par){
   RTMB::getAll(par,data)
   sigma = exp(log_sigma);
   kappa = exp(log_kappa);
+  rho = -1 + 2 * (1 / (1 + exp(-logit_rho)))
+  #rho = -1 +2*plogis(logit_rho)
   mu = exp(log_mu);
   c_mmpp = exp(log_c_mmpp)+1;
   bHazard = exp(logB); 
@@ -29,8 +31,33 @@ mslt = function(par){
   #Precision matrix Q, e.g. Lindgren + Rue 2015 JSS p4:
   Q_intensity = kappa[1]^4 * spdeMatrices$M0 + 2 * kappa[1]^2 * spdeMatrices$M1 + spdeMatrices$M2
   
-  if(matern_intensity != 0){
-    nll = nll - RTMB::dgmrf(x_intensity,0,Q_intensity, TRUE);
+  if(space_intensity_matern != 0){
+    nll = nll - RTMB::dgmrf(x_intensity_S,0,Q_intensity, TRUE);
+    if(usePCpriors==1){
+      d = 2; #Part of spatial pc-prior
+      R = -log(pcPriorsRange_intensity[2])*pcPriorsRange_intensity[1]^(d/2)
+      S = -log(pcPriorsSD_intensity[2])/pcPriorsSD_intensity[1];
+      rhoP = sqrt(8)/kappa[1];
+      nll = nll- log( d/2 * R *S *rhoP^(-1-d/2)* exp(-R* rhoP^(-d/2) -S* sigma[1] )); #pc-prior contribution
+    }
+  }
+  
+  if(spaceTime_intensity_maternAR1 != 0){
+    ## GMRF prior spatio-temporal effect
+    f1 <- function(x) {
+      RTMB::dgmrf(x,
+            mu = 0,
+            Q = Q_intensity,
+            log = TRUE)
+    }
+    f2 <- function(x) {
+      RTMB::dautoreg(x,
+               mu = 0,
+               phi = rho,
+               log = TRUE)
+    }
+    nll <- nll - RTMB::dseparable(f1, f2)(x_intensity_ST)
+  
     if(usePCpriors==1){
       d = 2; #Part of spatial pc-prior
       R = -log(pcPriorsRange_intensity[2])*pcPriorsRange_intensity[1]^(d/2)
@@ -41,8 +68,10 @@ mslt = function(par){
   }
   
   scaleS = 1 /((4*base::pi)*kappa[1]*kappa[1]); #needed for interpreting the sigma^2 parameter as marginal variance. See section 2.1 in Lindgren (2011)
-  x_intensity = x_intensity/sqrt(scaleS)*sigma[1];
-    
+  x_intensity_S = x_intensity_S/sqrt(scaleS)*sigma[1];
+  x_intensity_ST = x_intensity_ST/sqrt(scaleS)*sigma[1];
+
+  
   #----- Classical line transect likelihood----------
   nObs = length(distObs)
   for(i in 1:nObs){
@@ -64,11 +93,17 @@ mslt = function(par){
     }
   }
   
+
   #------ Log Gaussian Cox process ----------
   #Structure needed for effort constribution
-  Z_transect =  X_z*beta_z+  AalongLines%*%x_intensity;
-  Z_transect_endpoints =  X_z*beta_z+  AalongLinesEndpoints%*%x_intensity; 
-  
+  Z_transect =  X_z*beta_z+  AalongLines_S%*%x_intensity_S; #TODO: intercept vary between years
+  Z_transect_endpoints = X_z*beta_z+ AalongLinesEndpoints_S%*%x_intensity_S; 
+  for(t in 1:nYear){
+    indeks = which(year== min(year) + t-1)
+    Z_transect[indeks] =  Z_transect[indeks] +  AalongLines_ST[[t]]%*%x_intensity_ST[,t]; 
+    Z_transect_endpoints[indeks] =  Z_transect_endpoints[indeks] +  AalongLinesEndpoints_ST[[t]]%*%x_intensity_ST[,t]; 
+  }
+
   # Transect codes:
   # 0: start transect leg
   # 1: node used for numerical integration (including change g(y) or end transect)
@@ -150,7 +185,7 @@ mslt = function(par){
   }
   
   #Abundance
-  linPred =   exp(X_z_pred*beta_z + Apred%*%x_intensity) * k_psi;
+  linPred =   exp(X_z_pred*beta_z + Apred%*%x_intensity_S) * k_psi;
   
   #Size part
   if(applyPodSize==1){
@@ -194,7 +229,7 @@ mslt = function(par){
   RTMB::ADREPORT(log_range_psi);
   
   if(spatialBiasCorFigure==1){ #Needed when producing spatial bias corrected plots in paper, removed by defauls because requires a couple of minutes computation time
-    linPredFigure =   exp(beta_z[1] + x_intensity) * k_psi;
+    linPredFigure =   exp(beta_z[1] + x_intensity_S) * k_psi;
     linPredFigureSize =  exp(beta_size[1] + x_size);
     for(i in 1:length(linPredFigure)){
       sizeNB = exp(logSizeNB[1]);
