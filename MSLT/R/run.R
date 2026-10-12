@@ -15,7 +15,7 @@ fitMSLT = function(data,par,conf,rel.tol=1e-10,map = setMap(conf, par),ridge.cor
   Term = RTMB:::Term
   cmb <- function(f, data) function(p) f(p, data)
   
-  if(conf$mmpp==1){
+  if(conf$mmpp==1 & ("log_c_mmpp" %in% names(map) && !is.na(map$log_c_mmpp))){
       obj <- RTMB::MakeADFun(cmb(mslt,data), par, random=c("x_intensity_S","x_intensity_ST","x_size"), profile = c("log_c_mmpp"), map = map,ridge.correct = ridge.correct)	
   }else{
     obj <- RTMB::MakeADFun(cmb(mslt,data), par, random=c("x_intensity_S","x_intensity_ST","x_size"), map = map)	

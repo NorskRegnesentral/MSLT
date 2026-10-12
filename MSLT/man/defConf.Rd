@@ -5,7 +5,8 @@
 \title{defConf}
 \usage{
 defConf(
-  matern_intensity = 1,
+  space_intensity_matern = 1,
+  spaceTime_intensity_maternAR1 = 1,
   mmpp = 1,
   detectionTrunc = -1,
   matern_size = 1,
@@ -33,7 +34,9 @@ defConf(
 )
 }
 \arguments{
-\item{matern_intensity}{1: include spatial effect in group abundance intensity, 0: not}
+\item{space_intensity_matern}{1: include spatial effect in group abundance intensity, 0: not}
+
+\item{spaceTime_intensity_maternAR1}{1: include spacetime effect in group abundance intensity, 0: not}
 
 \item{mmpp}{1: include MMPP in group abundance intensity, 0:not}
 

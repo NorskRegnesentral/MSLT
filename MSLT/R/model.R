@@ -16,9 +16,12 @@ mslt = function(par,data){
   }
   
   RTMB::getAll(par,data)
-  sigma = exp(log_sigma);
-  kappa = exp(log_kappa);
-  rho = -1 + 2 * (1 / (1 + exp(-logit_rho)))
+  sigma_intensity = exp(log_sigma_intensity);
+  sigma_size = exp(log_sigma_size);
+  kappa_intensity = exp(log_kappa_intensity);
+  kappa_size = exp(log_kappa_size);
+  rho_intensity = -1 + 2 * (1 / (1 + exp(-logit_rho_intensity)))
+  rho_size = -1 + 2 * (1 / (1 + exp(-logit_rho_size)))
   #rho = -1 +2*plogis(logit_rho)
   mu = exp(log_mu);
   c_mmpp = exp(log_c_mmpp)+1;
@@ -29,16 +32,17 @@ mslt = function(par,data){
   RTMB::TapeConfig(atomic="disable") #Makes %*% more computationally efficient
   
   #Precision matrix Q, e.g. Lindgren + Rue 2015 JSS p4:
-  Q_intensity = kappa[1]^4 * spdeMatrices$M0 + 2 * kappa[1]^2 * spdeMatrices$M1 + spdeMatrices$M2
+  Q_intensity_S = kappa_intensity[1]^4 * spdeMatrices$M0 + 2 * kappa_intensity[1]^2 * spdeMatrices$M1 + spdeMatrices$M2
+  Q_intensity_ST = kappa_intensity[2]^4 * spdeMatrices$M0 + 2 * kappa_intensity[2]^2 * spdeMatrices$M1 + spdeMatrices$M2
   
   if(space_intensity_matern != 0){
-    nll = nll - RTMB::dgmrf(x_intensity_S,0,Q_intensity, TRUE);
+    nll = nll - RTMB::dgmrf(x_intensity_S,0,Q_intensity_S, TRUE);
     if(usePCpriors==1){
       d = 2; #Part of spatial pc-prior
       R = -log(pcPriorsRange_intensity[2])*pcPriorsRange_intensity[1]^(d/2)
       S = -log(pcPriorsSD_intensity[2])/pcPriorsSD_intensity[1];
-      rhoP = sqrt(8)/kappa[1];
-      nll = nll- log( d/2 * R *S *rhoP^(-1-d/2)* exp(-R* rhoP^(-d/2) -S* sigma[1] )); #pc-prior contribution
+      rhoP = sqrt(8)/kappa_intensity[1];
+      nll = nll- log( d/2 * R *S *rhoP^(-1-d/2)* exp(-R* rhoP^(-d/2) -S* sigma_intensity[1] )); #pc-prior contribution
     }
   }
   
@@ -47,13 +51,13 @@ mslt = function(par,data){
     f1 <- function(x) {
       RTMB::dgmrf(x,
             mu = 0,
-            Q = Q_intensity,
+            Q = Q_intensity_ST,
             log = TRUE)
     }
     f2 <- function(x) {
       RTMB::dautoreg(x,
                mu = 0,
-               phi = rho,
+               phi = rho_intensity,
                log = TRUE)
     }
     nll <- nll - RTMB::dseparable(f1, f2)(x_intensity_ST)
@@ -62,14 +66,15 @@ mslt = function(par,data){
       d = 2; #Part of spatial pc-prior
       R = -log(pcPriorsRange_intensity[2])*pcPriorsRange_intensity[1]^(d/2)
       S = -log(pcPriorsSD_intensity[2])/pcPriorsSD_intensity[1];
-      rhoP = sqrt(8)/kappa[1];
-      nll = nll- log( d/2 * R *S *rhoP^(-1-d/2)* exp(-R* rhoP^(-d/2) -S* sigma[1] )); #pc-prior contribution
+      rhoP = sqrt(8)/kappa_intensity[1];
+      nll = nll- log( d/2 * R *S *rhoP^(-1-d/2)* exp(-R* rhoP^(-d/2) -S* sigma_intensity[1] )); #pc-prior contribution
     }
   }
   
-  scaleS = 1 /((4*base::pi)*kappa[1]*kappa[1]); #needed for interpreting the sigma^2 parameter as marginal variance. See section 2.1 in Lindgren (2011)
-  x_intensity_S = x_intensity_S/sqrt(scaleS)*sigma[1];
-  x_intensity_ST = x_intensity_ST/sqrt(scaleS)*sigma[1];
+  scaleS = 1 /((4*base::pi)*kappa_intensity[1]*kappa_intensity[1]); #needed for interpreting the sigma^2 parameter as marginal variance. See section 2.1 in Lindgren (2011)
+  scaleST = 1 /((4*base::pi)*kappa_intensity[2]*kappa_intensity[2]); #needed for interpreting the sigma^2 parameter as marginal variance. See section 2.1 in Lindgren (2011)
+  x_intensity_S = x_intensity_S/sqrt(scaleS)*sigma_intensity[1];
+  x_intensity_ST = x_intensity_ST/sqrt(scaleST)*sigma_intensity[2];
 
   
   #----- Classical line transect likelihood----------
@@ -190,10 +195,10 @@ mslt = function(par,data){
   #Size part
   if(applyPodSize==1){
     if(matern_size != 0){
-      Q_size = kappa[2]^4 * spdeMatrices$M0 + 2 * kappa[2]^2 * spdeMatrices$M1 + spdeMatrices$M2
-      nll = nll - RTMB::dgmrf(x_size,0,Q_size,TRUE);
-      scaleS_size = 1/(4*base::pi*kappa[2]*kappa[2]); #Needed for interpreting the sigma^2 parameter as marginal variance. See section 2.1 in Lindgren (2011)
-      x_size = x_size/sqrt(scaleS_size) *sigma[2];
+      Q_size_S = kappa_size[1]^4 * spdeMatrices$M0 + 2 * kappa_size[1]^2 * spdeMatrices$M1 + spdeMatrices$M2
+      nll = nll - RTMB::dgmrf(x_size,0,Q_size_S,TRUE);
+      scaleS_size = 1/(4*base::pi*kappa_size[1]*kappa_size[1]); #Needed for interpreting the sigma^2 parameter as marginal variance. See section 2.1 in Lindgren (2011)
+      x_size = x_size/sqrt(scaleS_size) *sigma_size[1];
     }
     
     linPredSize =  exp(beta_size[1] + AObs%*%x_size);

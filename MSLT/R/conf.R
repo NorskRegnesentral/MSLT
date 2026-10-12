@@ -93,8 +93,6 @@ defConf = function(space_intensity_matern = 1,
 #' @export
 setMap = function(conf,par){
   map = list()
-  map$log_sigma =c(0,1)
-  map$log_kappa = c(0,1)
   if(conf$applyPodSize==1 & conf$independentPodSize ==0){
     map$beta_size = c(0,1)
     if(conf$dependentPodSize[1]==0){
@@ -112,12 +110,19 @@ setMap = function(conf,par){
   if(conf$space_intensity_matern==0 & conf$spaceTime_intensity_matern==0){ #Remove spatial and mmpp effects.
     map$x_intensity_S = as.factor(rep(NA,length(par$x_intensity_S)))
     map$x_intensity_ST = as.factor(rep(NA,length(par$x_intensity_ST)))
-    map$log_sigma[1] = NA
-    map$log_kappa[1] = NA
+    map$log_sigma_intensity = as.factor(c(NA,NA))
+    map$log_kappa_intensity = as.factor(c(NA,NA))
+    map$logit_rho_intensity = as.factor(NA)
+    
   }else if(conf$space_intensity_matern==0){
     map$x_intensity_S = as.factor(rep(NA,length(par$x_intensity_S)))
+    map$log_sigma_intensity = as.factor(c(NA,0))
+    map$log_kappa_intensity = as.factor(c(NA,0))
   }else if(conf$spaceTime_intensity_matern==0){
-    map$x_intensity_ST = as.factor(rep(NA,length(par$x_intensity_ST)))
+    map$x_intensity_ST = as.factor(rep(NA,length(par$x_intensity_ST)))    
+    map$log_sigma_intensity = as.factor(c(0,NA))
+    map$log_kappa_intensity = as.factor(c(0,NA))
+    map$logit_rho_intensity = as.factor(NA)
   }
   if(conf$mmpp==0){
     map$log_c_mmpp = as.factor(NA)
@@ -125,10 +130,10 @@ setMap = function(conf,par){
   }
   if(conf$applyPodSize == 0 | conf$independentPodSize == 0 | conf$matern_size==0){
     map$x_size = as.factor(rep(NA,length(par$x_size)))
-    map$log_sigma[2] = NA
-    map$log_kappa[2] = NA
+    map$log_sigma_size = as.factor(c(NA,NA))
+    map$log_kappa_size = as.factor(c(NA,NA))
+    map$logit_rho_size = as.factor(NA)
   }
-  map$log_sigma = as.factor(map$log_sigma)
-  map$log_kappa = as.factor(map$log_kappa)
+  
   return(map)
 }
