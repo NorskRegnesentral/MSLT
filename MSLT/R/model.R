@@ -230,6 +230,16 @@ mslt = function(par,data){
   logAbundance = log(abundance);
   RTMB::ADREPORT(logAbundance);
   
+  panel_names = unique(cell_integration$panel)
+  abundance_panels = RTMB::AD(rep(0,length(panel_names)))
+  for(i in 1:dim(cell_integration)[1]){
+    abundance_panels[which(panel_names==cell_integration$panel[i])] = abundance_panels[which(panel_names==cell_integration$panel[i])] +
+      as.numeric(cell_integration$panel_area)[i]*as.vector(linPred)[cell_integration$cell_id[i]]
+  }
+  logAbundance_panels = log(abundance_panels)
+  RTMB::ADREPORT(logAbundance_panels);
+  RTMB::REPORT(panel_names)
+  
   log_range_psi = log(-log(0.1)/sum(mu));
   RTMB::ADREPORT(log_range_psi);
   

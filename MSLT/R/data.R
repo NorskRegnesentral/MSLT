@@ -1,12 +1,12 @@
 #' setData
 #' @description Define data used internally based on data porvided and configuration file
 #' @param d Data provided by user
-#' @param predAreaUTM prediction area provided by user
+#' @param panels_utm prediction area provided by user. A polygon with possible several sub-polygons
 #' @param conf model configurations list  returned by \code{\link{defConf}}
 #' @param digits Number of digits in line transect integration points and in prediction area. Sometimes needed because different OS may result in slightly different mesh because of numerical issues with small numbers.
 #' @return data list used by TMB
 #' @export
-setData = function(d,predAreaUTM, conf, digits =6){
+setData = function(d,panels_utm, conf, digits =6){
 
   if(conf$detectionTrunc>0){
     ii = which(d$perpDist>conf$detectionTrunc & d$code==2)
@@ -36,22 +36,34 @@ setData = function(d,predAreaUTM, conf, digits =6){
     }
   }
 
-  #Accomondate for observer sides
+  #Accommodate for observer sides
   d$abortLeft = rep(0,dim(d)[1])
   d$abortRight = rep(0,dim(d)[1])
   d$abortLeft[is.na(d$Port)] =1
   d$abortRight[is.na(d$Stbd)] =1
 
-  #Define aundance integration points
-  grid <- sf::st_make_grid(predAreaUTM, cellsize = conf$cellsize)
-  grid_sf <- sf::st_as_sf(grid)
-  discretized_areas <- sf::st_intersection(grid_sf, predAreaUTM)#Intersection to find overlapping areas
-  discretized_areas$area <- sf::st_area(discretized_areas)
-  points=sf::st_centroid(sf::st_geometry(discretized_areas))
+  #Define abundance integration points
+  predAreaUTM = sf::st_union(panels_utm)
+  grid = sf::st_make_grid(predAreaUTM, cellsize = conf$cellsize)
+  grid_sf = sf::st_as_sf(grid)
+  discretized_areas = sf::st_intersection(grid_sf, predAreaUTM)# Clip grid to predAreaUTM
+  discretized_areas$area_total = sf::st_area(discretized_areas)# Area represented by each integration point
+  discretized_areas$cell_id = seq_len(nrow(discretized_areas))
   
+  points=sf::st_centroid(sf::st_geometry(discretized_areas))
   predData = data.frame(sf::st_coordinates(points))
-  names(predData) = c("utmx", "utmy")
+  names(predData) <- c("utmx", "utmy")
 
+  # Divide area into panels for panel-specific abundance estimates
+  cell_panel <- sf::st_intersection(
+    discretized_areas,
+    panels_utm
+  )
+  cell_panel$panel_area = sf::st_area(cell_panel)
+  cell_integration <- sf::st_drop_geometry(
+    cell_panel[c("cell_id", "panel","panel_area")]
+  )
+  
   buffer = sf::st_buffer(predAreaUTM,conf$buffer)
   mesh <- fmesher::fm_mesh_2d(obsUTM,
                               max.edge =conf$spdeDetails$max.edge,
@@ -131,6 +143,7 @@ setData = function(d,predAreaUTM, conf, digits =6){
               g_function = conf$g_function, #Which detection function to use
               penalize = conf$penalizeMMPP,
               areas = as.numeric(discretized_areas$area),
+              cell_integration = cell_integration,
               abortLeft = d$abortLeft,
               abortRight = d$abortRight,
               space_intensity_matern = conf$space_intensity_matern,
