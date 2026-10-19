@@ -55,7 +55,7 @@ defConf = function(space_intensity_matern = 1,
                    UTMproj = sf::st_crs("+proj=utm +zone=22 +units=km"),
                    LatLonProj =  sf::st_crs("+proj=longlat +datum=WGS84"),
                    buffer = 0,
-                   temporal_correlation = 0,
+                   temporal_correlation = 0
                    ){
   conf = list()
   conf$space_intensity_matern = space_intensity_matern 
