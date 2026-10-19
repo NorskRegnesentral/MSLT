@@ -26,6 +26,7 @@
 #' @param UTMproj CRS-UTM projection
 #' @param LatLonProj CRS-latitude and longitude projection
 #' @param buffer A buffer (in km) outside of the area of interest. The buffer is used when constructing the boundary input to fmesher::fm_mesh_2d
+#' @param temporal_correlation 0: do not inlclude temporal correlation in the spatio-temporal effect, 1: Include temporal correlation
 #' @return Configurations 
 #' @export
 defConf = function(space_intensity_matern = 1,
@@ -53,7 +54,8 @@ defConf = function(space_intensity_matern = 1,
                    cellsize = 50,
                    UTMproj = sf::st_crs("+proj=utm +zone=22 +units=km"),
                    LatLonProj =  sf::st_crs("+proj=longlat +datum=WGS84"),
-                   buffer = 0
+                   buffer = 0,
+                   temporal_correlation = 0,
                    ){
   conf = list()
   conf$space_intensity_matern = space_intensity_matern 
@@ -80,6 +82,7 @@ defConf = function(space_intensity_matern = 1,
   conf$detectionTrunc = detectionTrunc 
   conf$cellsize = cellsize
   conf$buffer = buffer
+  conf$temporal_correlation = temporal_correlation
   return(conf)
 }
 
@@ -133,6 +136,10 @@ setMap = function(conf,par){
     map$log_sigma_size = as.factor(c(NA,NA))
     map$log_kappa_size = as.factor(c(NA,NA))
     map$logit_rho_size = as.factor(NA)
+  }
+  
+  if(conf$temporal_correlation==0){
+    map$logit_rho_intensity = as.factor(NA)
   }
   
   return(map)
