@@ -179,6 +179,7 @@ setData = function(d,panels_utm, conf, digits =6){
   attributes(data)$obsLatLon = obsLatLon
   attributes(data)$predData = predData
   attributes(data)$detectionCov = colnames(X_g_right)
+  attributes(data)$surveyData = d
   return(data)
 }
 
