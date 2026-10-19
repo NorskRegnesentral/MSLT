@@ -30,7 +30,8 @@ defConf(
   cellsize = 50,
   UTMproj = sf::st_crs("+proj=utm +zone=22 +units=km"),
   LatLonProj = sf::st_crs("+proj=longlat +datum=WGS84"),
-  buffer = 0
+  buffer = 0,
+  temporal_correlation = 0
 )
 }
 \arguments{
@@ -85,6 +86,8 @@ defConf(
 \item{LatLonProj}{CRS-latitude and longitude projection}
 
 \item{buffer}{A buffer (in km) outside of the area of interest. The buffer is used when constructing the boundary input to fmesher::fm_mesh_2d}
+
+\item{temporal_correlation}{0: do not inlclude temporal correlation in the spatio-temporal effect, 1: Include temporal correlation}
 }
 \value{
 Configurations

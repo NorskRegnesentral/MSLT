@@ -4,12 +4,12 @@
 \alias{setData}
 \title{setData}
 \usage{
-setData(d, predAreaUTM, conf, digits = 6)
+setData(d, panels_utm, conf, digits = 6)
 }
 \arguments{
 \item{d}{Data provided by user}
 
-\item{predAreaUTM}{prediction area provided by user}
+\item{panels_utm}{prediction area provided by user. A polygon with possible several sub-polygons}
 
 \item{conf}{model configurations list  returned by \code{\link{defConf}}}
 
