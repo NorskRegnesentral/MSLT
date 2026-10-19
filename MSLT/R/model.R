@@ -101,7 +101,7 @@ mslt = function(par,data){
 
   #------ Log Gaussian Cox process ----------
   #Structure needed for effort constribution
-  Z_transect =  X_z*beta_z+  AalongLines_S%*%x_intensity_S; #TODO: intercept vary between years
+  Z_transect =  X_z*beta_z+  AalongLines_S%*%x_intensity_S; 
   Z_transect_endpoints = X_z*beta_z+ AalongLinesEndpoints_S%*%x_intensity_S; 
   for(t in 1:nYear){
     indeks = which(year== min(year) + t-1)
@@ -157,7 +157,11 @@ mslt = function(par,data){
         P = P%*%expm_mmpp2(lambda,mu,lineIntegralDelta[i]);
         P[1,1] = P[1,1]* lambda_endpoints[1];
         P[1,2] = P[1,2]* lambda_endpoints[2];
-        nll = nll +log(esw);  # This is the normalizing constant that was skipped above in the detection function
+        if(ridgeCorrectLine[i]==1){
+          nll = nll -Term( -log(esw));  # This is the normalizing constant that was skipped above in the detection function
+        }else{
+          nll = nll +log(esw);  # This is the normalizing constant that was skipped above in the detection function
+        }
       }
       if(code[i]!=0){
         if(ridgeCorrectLine[i]==1){
@@ -178,8 +182,6 @@ mslt = function(par,data){
     }
   }
   
-
-  
   pi_1 = mu[2]/sum(mu);
   pi_2 = mu[1]/sum(mu);
   k_psi = pi_1 + c_mmpp*pi_2;
@@ -190,7 +192,17 @@ mslt = function(par,data){
   }
   
   #Abundance
-  linPred =   exp(X_z_pred*beta_z + Apred%*%x_intensity_S) * k_psi;
+  if(spaceTime_intensity_maternAR1==0){
+    linPred =   exp(X_z_pred*beta_z + Apred%*%x_intensity_S) * k_psi;
+  }else{
+    linPred = RTMB::AD(matrix(NA,nrow = nYear,ncol = dim(Apred)[1]))
+    for(t in 1:nYear){
+      linPred[t,] =    RTMB::AD(as.vector(exp(X_z_pred*beta_z + Apred%*%x_intensity_S +  Apred%*%x_intensity_ST[,t]))) * k_psi;
+    }
+  }
+
+  
+  
   
   #Size part
   if(applyPodSize==1){
@@ -225,21 +237,40 @@ mslt = function(par,data){
       }
     }
   }
-  
-  abundance = sum(areas*linPred);
-  logAbundance = log(abundance);
-  RTMB::ADREPORT(logAbundance);
-  
-  panel_names = unique(cell_integration$panel)
-  abundance_panels = RTMB::AD(rep(0,length(panel_names)))
-  for(i in 1:dim(cell_integration)[1]){
-    abundance_panels[which(panel_names==cell_integration$panel[i])] = abundance_panels[which(panel_names==cell_integration$panel[i])] +
-      as.numeric(cell_integration$panel_area)[i]*as.vector(linPred)[cell_integration$cell_id[i]]
+  if(spaceTime_intensity_maternAR1==0){
+    abundance = sum(areas*linPred);
+    logAbundance = log(abundance);
+    RTMB::ADREPORT(logAbundance);
+    
+    panel_names = unique(cell_integration$panel)
+    abundance_panels = RTMB::AD(rep(0,length(panel_names)))
+    for(i in 1:dim(cell_integration)[1]){
+      abundance_panels[which(panel_names==cell_integration$panel[i])] = abundance_panels[which(panel_names==cell_integration$panel[i])] +
+        as.numeric(cell_integration$panel_area)[i]*as.vector(linPred)[cell_integration$cell_id[i]]
+    }
+    logAbundance_panels = log(abundance_panels)
+    RTMB::ADREPORT(logAbundance_panels);
+    RTMB::REPORT(panel_names)
+  }else{
+    abundance_vector = RTMB::AD(rep(0,nYear))
+    for(t in 1:nYear){
+      abundance_vector[t] = sum(areas*linPred[t,]);
+    }
+    logAbundance_vector = log(abundance_vector);
+    RTMB::ADREPORT(logAbundance_vector);
+    
+    panel_names = unique(cell_integration$panel)
+    abundance_panels_matrix = RTMB::AD(matrix(0,nrow = nYear,ncol = length(panel_names)))
+    for(t in 1:nYear){
+      for(i in 1:dim(cell_integration)[1]){
+        abundance_panels_matrix[t,which(panel_names==cell_integration$panel[i])] = abundance_panels_matrix[t,which(panel_names==cell_integration$panel[i])] +
+          as.numeric(cell_integration$panel_area)[i]*as.vector(linPred[t,])[cell_integration$cell_id[i]]
+      }
+    }
+    logAbundance_panels_matrix = log(abundance_panels_matrix)
+    RTMB::ADREPORT(logAbundance_panels_matrix);
+    RTMB::REPORT(panel_names)
   }
-  logAbundance_panels = log(abundance_panels)
-  RTMB::ADREPORT(logAbundance_panels);
-  RTMB::REPORT(panel_names)
-  
   log_range_psi = log(-log(0.1)/sum(mu));
   RTMB::ADREPORT(log_range_psi);
   
