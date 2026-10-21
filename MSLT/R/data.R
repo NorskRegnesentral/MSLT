@@ -1,13 +1,18 @@
 #' setData
 #' @description Define data used internally based on data porvided and configuration file
 #' @param d Data provided by user
-#' @param panels_utm prediction area provided by user. A polygon with possible several sub-polygons
+#' @param panels_ll prediction area provided by user. A polygon with possible several sub-polygons in standard lat-lon coordinates
 #' @param conf model configurations list  returned by \code{\link{defConf}}
 #' @param digits Number of digits in line transect integration points and in prediction area. Sometimes needed because different OS may result in slightly different mesh because of numerical issues with small numbers.
 #' @return data list used by TMB
 #' @export
-setData = function(d,panels_utm, conf, digits =6){
+setData = function(d,panels_ll, conf, digits =6){
 
+  panels_utm <- sf::st_transform(
+    panels_ll,
+    conf$UTMproj
+  )
+  
   if(conf$detectionTrunc>0){
     ii = which(d$perpDist>conf$detectionTrunc & d$code==2)
     if(length(ii)>0){
@@ -24,8 +29,8 @@ setData = function(d,panels_utm, conf, digits =6){
   #Different OS sometimes result in slightly different mesh because of rounding issues
   obsUTM = round(obsUTM,digits) 
   
-  d$utmy = obsUTM[,2]
   d$utmx = obsUTM[,1]
+  d$utmy = obsUTM[,2]
   
   #Define mid-points as coordinates for integration points
   integrationPointsUTM = as.matrix(d[,c("utmx","utmy")])
@@ -180,6 +185,7 @@ setData = function(d,panels_utm, conf, digits =6){
   attributes(data)$predData = predData
   attributes(data)$detectionCov = colnames(X_g_right)
   attributes(data)$surveyData = d
+  attributes(data)$panels_utm = panels_utm
   return(data)
 }
 
