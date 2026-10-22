@@ -36,11 +36,12 @@ fitMSLT = function(data,par,conf,rel.tol=1e-10,map = setMap(conf, par),ridge.cor
     print("NB!!! Optization failed!")
     NA
   })
-
+  print("test00")
   endTime = Sys.time()
   timeUsed = endTime - startTime
   print(timeUsed)
-
+  print("test0")
+  
  if(length(fit)==1){
    return(NA)
  }
