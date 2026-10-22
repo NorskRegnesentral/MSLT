@@ -104,6 +104,7 @@ fitMSLT_fallback_ridge = function(data,par,conf,map = setMap(conf, par),ridge.co
     print(id_ridge_used)
     
     runs[[i]] = fitMSLT(data,par,conf,ridge.correct = TRUE,getJointPrecision = TRUE)
+    print(paste0("Trial ", i, " finished."))
     
     if(runs[[i]]$opt$convergence==0 | i > n_trials){
       print(paste0("Converged in trial ",i,"."))
