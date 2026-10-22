@@ -44,7 +44,7 @@ fitMSLT = function(data,par,conf,rel.tol=1e-10,map = setMap(conf, par),ridge.cor
  if(length(fit)==1){
    return(NA)
  }
- if(conf$spaceTime_intensity_maternAR1!=0){
+ if(conf$spaceTime_intensity_maternAR1!=0 & runs[[i]]$opt$convergence==0 ){
    panel_names = fit$obj$report()$panel_names
    colnames(fit$rl$logAbundance_panels_matrix) = panel_names
    rownames(fit$rl$logAbundance_panels_matrix) = min(fit$data$year):max(fit$data$year)
