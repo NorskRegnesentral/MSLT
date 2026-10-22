@@ -30,14 +30,13 @@ defConf(
   cellsize = 50,
   UTMproj = sf::st_crs("+proj=utm +zone=22 +units=km"),
   LatLonProj = sf::st_crs("+proj=longlat +datum=WGS84"),
-  buffer = 0,
-  temporal_correlation = 0
+  buffer = 0
 )
 }
 \arguments{
-\item{space_intensity_matern}{1: include spatial effect in group abundance intensity, 0: not}
+\item{space_intensity_matern}{0: do not include spatial effect in group abundance intensity 1: include spatial effect}
 
-\item{spaceTime_intensity_maternAR1}{1: include spacetime effect in group abundance intensity, 0: not}
+\item{spaceTime_intensity_maternAR1}{0: do not include space-time effect in group abundance intensity, 1: include space-time effect but no correlation across years 2: include space-time effect with correlation across years}
 
 \item{mmpp}{1: include MMPP in group abundance intensity, 0:not}
 

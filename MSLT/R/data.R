@@ -177,7 +177,7 @@ setData = function(d,panels_ll, conf, digits =6){
   obsLatLon = data.frame(sf::st_coordinates(obsLatLon))
   colnames(obsLatLon) = c("lon","lat")
   obsUTM = data.frame(obsUTM)
-  colnames(obsUTM) = c("lon","lat")
+  colnames(obsUTM) = c("UTMX","UTMY")
   
   attributes(data)$mesh = mesh
   attributes(data)$obsUTM = obsUTM

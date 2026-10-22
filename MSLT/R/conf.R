@@ -1,7 +1,7 @@
 #' defConf
 #' 
-#' @param space_intensity_matern 1: include spatial effect in group abundance intensity, 0: not 
-#' @param spaceTime_intensity_maternAR1 1: include spacetime effect in group abundance intensity, 0: not 
+#' @param space_intensity_matern 0: do not include spatial effect in group abundance intensity 1: include spatial effect 
+#' @param spaceTime_intensity_maternAR1 0: do not include space-time effect in group abundance intensity, 1: include space-time effect but no correlation across years 2: include space-time effect with correlation across years
 #' @param mmpp  1: include MMPP in group abundance intensity, 0:not
 #' @param detectionTrunc Distance at which detection is truncated
 #' @param matern_size 1: include spatial effect in group size, 0: not
@@ -54,9 +54,7 @@ defConf = function(space_intensity_matern = 1,
                    cellsize = 50,
                    UTMproj = sf::st_crs("+proj=utm +zone=22 +units=km"),
                    LatLonProj =  sf::st_crs("+proj=longlat +datum=WGS84"),
-                   buffer = 0,
-                   temporal_correlation = 0
-                   ){
+                   buffer = 0                   ){
   conf = list()
   conf$space_intensity_matern = space_intensity_matern 
   conf$spaceTime_intensity_maternAR1 = spaceTime_intensity_maternAR1 
@@ -82,7 +80,6 @@ defConf = function(space_intensity_matern = 1,
   conf$detectionTrunc = detectionTrunc 
   conf$cellsize = cellsize
   conf$buffer = buffer
-  conf$temporal_correlation = temporal_correlation
   return(conf)
 }
 
@@ -138,7 +135,7 @@ setMap = function(conf,par){
     map$logit_rho_size = as.factor(NA)
   }
   
-  if(conf$temporal_correlation==0){
+  if(conf$spaceTime_intensity_maternAR1 != 2){
     map$logit_rho_intensity = as.factor(NA)
   }
   

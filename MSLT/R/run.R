@@ -14,9 +14,10 @@ fitMSLT = function(data,par,conf,rel.tol=1e-10,map = setMap(conf, par),ridge.cor
   startTime <- Sys.time()
   Term = RTMB:::Term
   cmb <- function(f, data) function(p) f(p, data)
-  
-  if(conf$mmpp==1 & ("log_c_mmpp" %in% names(map) && !is.na(map$log_c_mmpp))){
-      obj <- RTMB::MakeADFun(cmb(mslt,data), par, random=c("x_intensity_S","x_intensity_ST","x_size"), profile = c("log_c_mmpp"), map = map,ridge.correct = ridge.correct)	
+  if(("log_c_mmpp" %in% names(map) && is.na(map$log_c_mmpp))){
+    obj <- RTMB::MakeADFun(cmb(mslt,data), par, random=c("x_intensity_S","x_intensity_ST","x_size"), map = map)	
+  }else if(conf$mmpp==1 ){#& ("log_c_mmpp" %in% names(map) && !is.na(map$log_c_mmpp))){
+    obj <- RTMB::MakeADFun(cmb(mslt,data), par, random=c("x_intensity_S","x_intensity_ST","x_size"), profile = c("log_c_mmpp"), map = map,ridge.correct = ridge.correct)	
   }else{
     obj <- RTMB::MakeADFun(cmb(mslt,data), par, random=c("x_intensity_S","x_intensity_ST","x_size"), map = map)	
   }
@@ -40,6 +41,20 @@ fitMSLT = function(data,par,conf,rel.tol=1e-10,map = setMap(conf, par),ridge.cor
   timeUsed = endTime - startTime
   print(timeUsed)
 
+ if(length(fit)==1){
+   return(NA)
+ }
+ if(conf$spaceTime_intensity_maternAR1!=0){
+   panel_names = fit$obj$report()$panel_names
+   colnames(fit$rl$logAbundance_panels_matrix) = panel_names
+   rownames(fit$rl$logAbundance_panels_matrix) = min(fit$data$year):max(fit$data$year)
+   names(fit$rl$logAbundance_vector)= min(fit$data$year):max(fit$data$year)
+   colnames(fit$rlSd$logAbundance_panels_matrix) = panel_names
+   rownames(fit$rlSd$logAbundance_panels_matrix) = min(fit$data$year):max(fit$data$year)
+   names(fit$rlSd$logAbundance_vector)= min(fit$data$year):max(fit$data$year)
+ }
+  
+  
   class(fit) = "mslt"
   return(fit)
 }
