@@ -45,9 +45,9 @@ fitMSLT_fallback_ridge = function(data,par,conf,map = setMap(conf, par),ridge.co
     ii_ST_H= which(colnames(H) %in% c("x_intensity_S","x_intensity_ST"))
     H_ST = H[ii_ST_H,ii_ST_H]
     H_ST_dg <- as(H_ST, "dgCMatrix")
-    print("Find smalles Eigenvalue")
+    print("Find smallest eigenvalue")
     ev <- RSpectra::eigs_sym(H_ST_dg, k = 1, which = "SM")
-    v <- ev$vectors[, 1]  # minste egenverdi
+    v <- ev$vectors[, 1]  # eigen vector with smallest eigenvalue
     vS  <- v[ii_S]
     vST <- v[ii_ST]
     

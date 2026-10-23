@@ -36,17 +36,14 @@ fitMSLT = function(data,par,conf,rel.tol=1e-10,map = setMap(conf, par),ridge.cor
     print("NB!!! Optization failed!")
     NA
   })
-  print("test00")
   endTime = Sys.time()
   timeUsed = endTime - startTime
   print(timeUsed)
-  print("test0")
-  
+
  if(length(fit)==1){
    return(NA)
  }
  if(conf$spaceTime_intensity_maternAR1!=0 & fit$opt$convergence==0 ){
-   print("test1")
    panel_names = fit$obj$report()$panel_names
    colnames(fit$rl$logAbundance_panels_matrix) = panel_names
    rownames(fit$rl$logAbundance_panels_matrix) = min(fit$data$year):max(fit$data$year)
@@ -54,7 +51,6 @@ fitMSLT = function(data,par,conf,rel.tol=1e-10,map = setMap(conf, par),ridge.cor
    colnames(fit$rlSd$logAbundance_panels_matrix) = panel_names
    rownames(fit$rlSd$logAbundance_panels_matrix) = min(fit$data$year):max(fit$data$year)
    names(fit$rlSd$logAbundance_vector)= min(fit$data$year):max(fit$data$year)
-   print("test2")
  }
   
   
