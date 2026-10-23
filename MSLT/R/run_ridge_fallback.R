@@ -26,7 +26,7 @@ fitMSLT_fallback_ridge = function(data,par,conf,map = setMap(conf, par),ridge.co
   if(run$opt$convergence==0){
     return(run)
   }
-  
+
   runs = list()
   done = FALSE
   i = 0
@@ -44,9 +44,10 @@ fitMSLT_fallback_ridge = function(data,par,conf,map = setMap(conf, par),ridge.co
     H <- sdrep$jointPrecision
     ii_ST_H= which(colnames(H) %in% c("x_intensity_S","x_intensity_ST"))
     H_ST = H[ii_ST_H,ii_ST_H]
-    ev = eigen(H_ST, symmetric=TRUE)
-    
-    v <- ev$vectors[, length(ev$values)]  # minste egenverdi
+    H_ST_dg <- as(H_ST, "dgCMatrix")
+    print("Find smalles Eigenvalue")
+    ev <- RSpectra::eigs_sym(H_ST_dg, k = 1, which = "SM")
+    v <- ev$vectors[, 1]  # minste egenverdi
     vS  <- v[ii_S]
     vST <- v[ii_ST]
     
@@ -104,8 +105,7 @@ fitMSLT_fallback_ridge = function(data,par,conf,map = setMap(conf, par),ridge.co
     print(id_ridge_used)
     
     runs[[i]] = fitMSLT(data,par,conf,ridge.correct = TRUE,getJointPrecision = TRUE)
-    print(paste0("Trial ", i, " finished."))
-    
+
     if(runs[[i]]$opt$convergence==0 | i > n_trials){
       print(paste0("Converged in trial ",i,"."))
       done = TRUE
