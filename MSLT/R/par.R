@@ -5,10 +5,10 @@
 #' @return Initial model parameters
 #' @export
 setPar = function(data,conf){
-  par = list(log_sigma_intensity =c(-1.5,-1.5),
+  par = list(log_sigma_intensity =c(0.5,0.5),
              log_kappa_intensity = c(-5,-5),
              logit_rho_intensity = 0,
-             log_sigma_size =c(-1.5,-1.5),
+             log_sigma_size =c(0.5,0.5),
              log_kappa_size = c(-5,-5),
              logit_rho_size = 0,
              beta_g = rep(0.2,dim(data$X_g_obs)[2]),
