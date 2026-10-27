@@ -99,7 +99,7 @@ Read the line transect data and the survey area. The data is stored in folder `p
 ```R
 setwd(tempdir())
 files = c("lineTransectData.rds", "surveyArea_ll.rds")
-url <- "https://raw.githubusercontent.com/NorskRegnesentral/MSLT/spaceTime/papers/JASA2025/data/"
+url <- "https://raw.githubusercontent.com/NorskRegnesentral/MSLT/main/papers/JASA2025/data/"
 d <- lapply(files, function(f)download.file(paste(url,f,sep=""), f))
 surveyData <- readRDS("lineTransectData.rds")
 predArea_ll <- readRDS("surveyArea_ll.rds")
