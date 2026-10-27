@@ -98,6 +98,13 @@ defConf = function(space_intensity_matern = 1,
 #' @export
 setMap = function(conf,par){
   map = list()
+  
+  #Space time currently not implemented for group size
+  map$log_sigma_size = as.factor(c(0,0))
+  map$log_kappa_size = as.factor(c(0,0))
+  map$logit_rho_size = as.factor(NA)
+  
+  
   if(conf$applyPodSize==1 & conf$independentPodSize ==0){
     map$beta_size = c(0,1)
     if(conf$dependentPodSize[1]==0){
