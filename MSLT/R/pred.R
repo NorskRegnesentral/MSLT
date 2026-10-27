@@ -8,6 +8,7 @@
 #' @export
 pred_biascorrect = function(fit,year_area_idx = NULL,nSplit = 10,sd = FALSE){
   
+  startTime <- Sys.time()
   
   #saveRDS(fitSim[[1]],"fitExample.Rdata")
   #fit = readRDS("fitExample.Rdata")
@@ -23,6 +24,7 @@ pred_biascorrect = function(fit,year_area_idx = NULL,nSplit = 10,sd = FALSE){
   
   }else{
     idx = which(names(fit$rep$value) == "logAbundance_panels_matrix")
+    panel_names = fit$obj$report()$panel_names
     logAbundance_panels_matrix = matrix(idx,nrow = fit$data$nYear,ncol = length(panel_names))
     colnames(logAbundance_panels_matrix) = colnames(fit$rl$logAbundance_panels_matrix)
     rownames(logAbundance_panels_matrix) = rownames(logAbundance_panels_matrix)
@@ -34,6 +36,10 @@ pred_biascorrect = function(fit,year_area_idx = NULL,nSplit = 10,sd = FALSE){
                                        bias.correct.control = list(sd = sd, split = split, nsplit = NULL))
     
   }
+  
+  endTime = Sys.time()
+  timeUsed = endTime - startTime
+  print(timeUsed)
   
   rl_bias_correct = as.list(sdrep_biascorrect,what = "Est. (bias.correct)", report = TRUE)
   rlsd_bias_correct = as.list(sdrep_biascorrect,what = "Std. (bias.correct)", report = TRUE)
