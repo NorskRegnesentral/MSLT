@@ -19,7 +19,6 @@ setData = function(d,panels_ll, conf, digits =6){
     geom[[i]][[1]] <- round(geom[[i]][[1]], digits)
   }
   sf::st_geometry(panels_utm) <- geom
-  panels_utm <- sf::st_sf(geometry = geom)
   ###
 
   if(conf$detectionTrunc>0){
