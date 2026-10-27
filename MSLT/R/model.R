@@ -103,10 +103,12 @@ mslt = function(par,data){
   #Structure needed for effort constribution
   Z_transect =  X_z*beta_z+  AalongLines_S%*%x_intensity_S; 
   Z_transect_endpoints = X_z*beta_z+ AalongLinesEndpoints_S%*%x_intensity_S; 
-  for(t in 1:nYear){
-    indeks = which(year== min(year) + t-1)
-    Z_transect[indeks] =  Z_transect[indeks] +  AalongLines_ST[[t]]%*%x_intensity_ST[,t]; 
-    Z_transect_endpoints[indeks] =  Z_transect_endpoints[indeks] +  AalongLinesEndpoints_ST[[t]]%*%x_intensity_ST[,t]; 
+  if(spaceTime_intensity_maternAR1 != 0){
+    for(t in 1:nYear){
+      indeks = which(year== min(year) + t-1)
+      Z_transect[indeks] =  Z_transect[indeks] +  AalongLines_ST[[t]]%*%x_intensity_ST[,t]; 
+      Z_transect_endpoints[indeks] =  Z_transect_endpoints[indeks] +  AalongLinesEndpoints_ST[[t]]%*%x_intensity_ST[,t]; 
+    }
   }
 
   # Transect codes:
@@ -213,7 +215,7 @@ mslt = function(par,data){
       x_size = x_size/sqrt(scaleS_size) *sigma_size[1];
     }
     
-    linPredSize =  exp(beta_size[1] + AObs%*%x_size);
+    linPredSize =  exp(beta_size[1] + AObs_S%*%x_size);
     linPredSizePredicion =   exp(beta_size[1] + Apred%*%x_size);
 
     for(i in 1:nObs){

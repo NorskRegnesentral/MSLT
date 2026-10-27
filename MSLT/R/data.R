@@ -13,6 +13,15 @@ setData = function(d,panels_ll, conf, digits =6){
     conf$UTMproj
   )
   
+  #Different OS sometimes result in slightly different SPDE mesh because of rounding issue##
+  geom <- sf::st_geometry(panels_utm)
+  for(i in seq_along(geom)) {
+    geom[[i]][[1]] <- round(geom[[i]][[1]], digits)
+  }
+  sf::st_geometry(panels_utm) <- geom
+  panels_utm <- sf::st_sf(geometry = geom)
+  ###
+
   if(conf$detectionTrunc>0){
     ii = which(d$perpDist>conf$detectionTrunc & d$code==2)
     if(length(ii)>0){
@@ -49,6 +58,7 @@ setData = function(d,panels_ll, conf, digits =6){
 
   #Define abundance integration points
   predAreaUTM = sf::st_union(panels_utm)
+  
   grid = sf::st_make_grid(predAreaUTM, cellsize = conf$cellsize)
   grid_sf = sf::st_as_sf(grid)
   discretized_areas = sf::st_intersection(grid_sf, predAreaUTM)# Clip grid to predAreaUTM
@@ -65,6 +75,10 @@ setData = function(d,panels_ll, conf, digits =6){
     panels_utm
   )
   cell_panel$panel_area = sf::st_area(cell_panel)
+  if(is.null(cell_panel[["panel", exact = TRUE]])){
+    cell_panel$panel = rep("A", dim(cell_panel)[1])
+  }
+  
   cell_integration <- sf::st_drop_geometry(
     cell_panel[c("cell_id", "panel","panel_area")]
   )
@@ -119,12 +133,17 @@ setData = function(d,panels_ll, conf, digits =6){
   AObs_ST = list()
   AalongLines_ST = list()
   AalongLinesEndpoints_ST = list()
-  nYear = diff(range(d$year)) + 1
-  for(t in 1:nYear){
-    AObs_ST[[t]] = fmesher::fm_basis(mesh,obsUTM[d$code==2 & d$year == min(d$year) + t-1,])
-    AalongLines_ST[[t]] <- fmesher::fm_basis(mesh,integrationPointsUTM[d$year == min(d$year) + t-1,])
-    AalongLinesEndpoints_ST[[t]] <- fmesher::fm_basis(mesh,endpoints[d$year == min(d$year) + t-1,])
+  if(conf$spaceTime_intensity_maternAR1){
+    nYear = diff(range(d$year)) + 1
+    for(t in 1:nYear){
+      AObs_ST[[t]] = fmesher::fm_basis(mesh,obsUTM[d$code==2 & d$year == min(d$year) + t-1,])
+      AalongLines_ST[[t]] <- fmesher::fm_basis(mesh,integrationPointsUTM[d$year == min(d$year) + t-1,])
+      AalongLinesEndpoints_ST[[t]] <- fmesher::fm_basis(mesh,endpoints[d$year == min(d$year) + t-1,])
+    }
+  }else{
+    nYear = 1
   }
+
   
 
   data = list(AalongLines_S = AalongLines_S,
