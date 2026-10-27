@@ -102,7 +102,7 @@ files = c("lineTransectData.rds", "surveyArea.rds")
 url <- "https://raw.githubusercontent.com/NorskRegnesentral/MSLT/main/papers/JASA2025/data/"
 d <- lapply(files, function(f)download.file(paste(url,f,sep=""), f))
 surveyData <- readRDS("lineTransectData.rds")
-predAreaUTM <- readRDS("surveyArea.rds")
+predArea_ll <- readRDS("surveyArea_ll.rds")
 ```
 
 Set configurations for the model:
@@ -112,7 +112,8 @@ conf = defConf(detectionTrunc = 3.5, #Truncation limit 3.5 km in our case, see E
                cutoff = 8, #Maximum distance between SPDE mesh nodes along transects, see Section 2.2 and S3.1.
                max.edge = c(20,80), #Maximum distance between SPDE mesh nodes in survey area and outer area, see Section 2.2  and S3.1.
                cellsize = 50, #Distance between spatial integration points, see Eq (19)
-               matern_intensity = 1, #Activate SPDE, see Eq (2)
+               space_intensity_matern = 1, #Activate SPDE, see Eq (2)
+               spaceTime_intensity_maternAR1 = 0, #No spatio-temporal structure
                mmpp = 1, #Activate MMPP , see Eq (2)
                applyPodSize = 1, #Activate group size model, see section 2.4.
                covDetection = "vessel" #Use vessel as a covariate in Eq. (2)
@@ -121,7 +122,7 @@ conf = defConf(detectionTrunc = 3.5, #Truncation limit 3.5 km in our case, see E
 
 Set up the data and the parameters: 
 ```r
-data = setData(surveyData,predAreaUTM,conf)
+data = setData(surveyData,predArea_ll,conf)
 par = setPar(data,conf)
 ```
 
