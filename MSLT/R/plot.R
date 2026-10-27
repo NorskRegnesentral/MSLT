@@ -42,11 +42,11 @@ plot_spatial = function(fit,year = NULL, sd = FALSE,spatial_stationary = TRUE,sp
   levels = round(seq(zlim[1],zlim[2],by = 0.4),1)
   
   # akima::interp is sensitive to large coordinate values; center coordinates first
-  x <- mesh$loc[,1] - mean(mesh$loc[,1])
-  y <- mesh$loc[,2] - mean(mesh$loc[,2])
+  x <- mesh$loc[,1] - round(mean(mesh$loc[,1]))
+  y <- mesh$loc[,2] - round(mean(mesh$loc[,2]))
   interp_surface <- akima::interp(x,y,linPred_year,nx = 100,ny = 100)
-  interp_surface$x <- interp_surface$x + mean(mesh$loc[,1])
-  interp_surface$y <- interp_surface$y + mean(mesh$loc[,2])
+  interp_surface$x <- interp_surface$x + round(mean(mesh$loc[,1]))
+  interp_surface$y <- interp_surface$y + round(mean(mesh$loc[,2]))
 
   fields::image.plot(interp_surface,
                      col=viridis::turbo(500),
@@ -60,14 +60,14 @@ plot_spatial = function(fit,year = NULL, sd = FALSE,spatial_stationary = TRUE,sp
   
   plot(sf::st_geometry(panels_utm), add = TRUE, border = "black",lwd = 2)
   points(survey_year$utmx,survey_year$utmy,cex = 0.3,col = 'black')
-  points(survey_year$utmx[survey_year$code==2],survey_year$utmy[survey_year$code==2],cex = 0.6,col = 'purple',pch = 20)
+  points(survey_year$utmx[survey_year$code==2],survey_year$utmy[survey_year$code==2],cex = 1.5,col = 'purple',pch = 20)
   
   # World coastline/countries
   world <- rnaturalearth::ne_countries(scale = "medium", returnclass = "sf")
-  norway_utm <- sf::st_transform(world, fit$conf$UTMproj)
+  world_utm <- sf::st_transform(world, fit$conf$UTMproj)
   
   plot(
-    sf::st_geometry(norway_utm),
+    sf::st_geometry(world_utm),
     col = "grey90",
     border = "black",
     add = TRUE
