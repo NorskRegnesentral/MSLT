@@ -21,8 +21,6 @@ mslt = function(par,data){
   kappa_intensity = exp(log_kappa_intensity);
   kappa_size = exp(log_kappa_size);
   rho_intensity = -1 + 2 * (1 / (1 + exp(-logit_rho_intensity)))
-  rho_size = -1 + 2 * (1 / (1 + exp(-logit_rho_size)))
-  #rho = -1 +2*plogis(logit_rho)
   mu = exp(log_mu);
   c_mmpp = exp(log_c_mmpp)+1;
   bHazard = exp(logB); 
@@ -208,6 +206,7 @@ mslt = function(par,data){
   
   #Size part
   if(applyPodSize==1){
+    #NB: spatio-temporal structure not included for group size
     if(matern_size != 0){
       Q_size_S = kappa_size[1]^4 * spdeMatrices$M0 + 2 * kappa_size[1]^2 * spdeMatrices$M1 + spdeMatrices$M2
       nll = nll - RTMB::dgmrf(x_size,0,Q_size_S,TRUE);

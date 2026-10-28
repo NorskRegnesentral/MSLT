@@ -99,12 +99,6 @@ defConf = function(space_intensity_matern = 1,
 setMap = function(conf,par){
   map = list()
   
-  #Space time currently not implemented for group size
-  map$log_sigma_size = as.factor(c(0,0))
-  map$log_kappa_size = as.factor(c(0,0))
-  map$logit_rho_size = as.factor(NA)
-  
-  
   if(conf$applyPodSize==1 & conf$independentPodSize ==0){
     map$beta_size = c(0,1)
     if(conf$dependentPodSize[1]==0){
@@ -142,9 +136,8 @@ setMap = function(conf,par){
   }
   if(conf$applyPodSize == 0 | conf$independentPodSize == 0 | conf$matern_size==0){
     map$x_size = as.factor(rep(NA,length(par$x_size)))
-    map$log_sigma_size = as.factor(c(NA,NA))
-    map$log_kappa_size = as.factor(c(NA,NA))
-    map$logit_rho_size = as.factor(NA)
+    map$log_sigma_size = as.factor(NA)
+    map$log_kappa_size = as.factor(NA)
   }
   
   if(conf$spaceTime_intensity_maternAR1 != 2){
