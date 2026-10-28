@@ -19,6 +19,13 @@
 #' @export
 fitMSLT_fallback_ridge = function(data,par,conf,map = setMap(conf, par),ridge.correct = FALSE,nTransect_ridge = 5,n_trials = 20,...){
   
+  if(conf$spaceTime_intensity_maternAR1==0){
+    stop("fitMSLT_fallback_ridge currently is only implemented for when both space_inteinsity and space-time_inteinsity are activated")
+  }
+  if(conf$space_intensity_matern==0){
+    stop("fitMSLT_fallback_ridge currently is only implemented for when both space_inteinsity and space-time_inteinsity are activated")
+  }
+  
   surveyData = attributes(data)$surveyData
   
   run = fitMSLT(data,par,conf, map = map, getJointPrecision = TRUE,...)
@@ -50,7 +57,7 @@ fitMSLT_fallback_ridge = function(data,par,conf,map = setMap(conf, par),ridge.co
     H_ST = H[ii_ST_H,ii_ST_H]
     H_ST_dg <- as(H_ST, "dgCMatrix")
     print("Find smallest eigenvalue")
-    ev <- RSpectra::eigs_sym(H_ST_dg, k = 1, which = "SM")
+    ev <- RSpectra::eigs_sym(H_ST_dg, k = 1, which = "SA")
     v <- ev$vectors[, 1]  # eigen vector with smallest eigenvalue
     vS  <- v[ii_S]
     vST <- v[ii_ST]
@@ -110,6 +117,12 @@ fitMSLT_fallback_ridge = function(data,par,conf,map = setMap(conf, par),ridge.co
     
     runs[[i]] = fitMSLT(data,par,conf, map = map,ridge.correct = TRUE,getJointPrecision = TRUE)
 
+    if(identical(runs[[i]], NA)){
+      print("Ridge-corrected fit failed, NA returned")
+      print(i)
+      return(runs[[i]])
+    }
+    
     if(runs[[i]]$opt$convergence==0 | i > n_trials){
       print(paste0("Converged in trial ",i,"."))
       done = TRUE
