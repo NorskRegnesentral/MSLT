@@ -12,8 +12,10 @@ partable<-function(run,CI_level=0.95){
   pl = run$pl
   plSd = run$plSd
 
-  sigma_int = exp(c(pl$log_sigma[1], pl$log_sigma[1] + qq*plSd$log_sigma[1]))
-  log_kappa_int = c(pl$log_kappa[1], pl$log_kappa[1] + qq*plSd$log_kappa[1])
+  sigma_int_S = exp(c(pl$log_sigma_intensity[1], pl$log_sigma_intensity[1] + qq*plSd$log_sigma_intensity[1]))
+  log_kappa_int_S = c(pl$log_kappa_intensity[1], pl$log_kappa_intensity[1] + qq*plSd$log_kappa_intensity[1])
+  sigma_int_ST = exp(c(pl$log_sigma_intensity[2], pl$log_sigma_intensity[2] + qq*plSd$log_sigma_intensity[2]))
+  log_kappa_int_ST = c(pl$log_kappa_intensity[2], pl$log_kappa_intensity[2] + qq*plSd$log_kappa_intensity[2])
   sigma_size = exp(c(pl$log_sigma[2], pl$log_sigma[2] + qq*plSd$log_sigma[2]))
   log_kappa_size = c(pl$log_kappa[2], pl$log_kappa[2] + qq*plSd$log_kappa[2])
   log_mu1 = c(pl$log_mu[1], pl$log_mu[1] + qq*plSd$log_mu[1])
@@ -36,7 +38,7 @@ partable<-function(run,CI_level=0.95){
   beta1_size = c(pl$beta_size[2],pl$beta_size[2] + qq*plSd$beta_size[2])
   log_size_NB = c(pl$logSizeNB,pl$logSizeNB + qq*plSd$logSizeNB)
   
-  parTabTmp = rbind(sigma_int,log_kappa_int,log_mu1,log_mu2,c_mmpp,betaz)
+  parTabTmp = rbind(sigma_int_S,sigma_int_ST,log_kappa_int_S,log_kappa_int_ST,log_mu1,log_mu2,c_mmpp,betaz)
   parTab = rbind(parTabTmp,do.call(rbind,betaG))
   rownames(parTab) = c(rownames(parTabTmp),paste0("betaG",1:length(pl$beta_g)))
   parTab = rbind(parTab,b,sigma_size,log_kappa_size,beta0_size,beta1_size,log_size_NB)
@@ -44,19 +46,19 @@ partable<-function(run,CI_level=0.95){
   colnames(parTab) <- c("Est","CI_L","CI_U")
 
   # Setting estimates to NA if not estimated
-  if(!is.null(run$map$x)){
-    parTab[rownames(parTab)=="sigma_int",] = NA
-    parTab[rownames(parTab)=="log_kappa_int",] = NA
-  }
+#  if(!is.null(run$map$x)){
+#    parTab[rownames(parTab)=="sigma_int",] = NA
+#    parTab[rownames(parTab)=="log_kappa_int",] = NA
+#  }
   if(!is.null(run$map$log_mu)){
     parTab[rownames(parTab)=="log_mu1",] = NA
     parTab[rownames(parTab)=="log_mu2",] = NA
     parTab[rownames(parTab)=="c_mmpp",] = NA
   }
-  if(is.na(run$map$log_sigma[1])){
-    parTab[rownames(parTab)=="sigma_int",] = NA
-    parTab[rownames(parTab)=="log_kappa_int",] = NA
-  }
+#  if(is.na(run$map$log_sigma[1])){
+#    parTab[rownames(parTab)=="sigma_int",] = NA
+#    parTab[rownames(parTab)=="log_kappa_int",] = NA
+#  }
 
   return(parTab)
 }
@@ -74,7 +76,8 @@ partable_derived <-function(run,sdrep_bc = NULL,CI_level=0.95){
   CI_U <- 1-CI_L
   qq = c(stats::qnorm(CI_L),stats::qnorm(CI_U))
   
-  range_int = c(sqrt(8)/exp(run$pl$log_kappa[1]),sqrt(8)/exp(run$pl$log_kappa[1] +  rev(qq)*run$plSd$log_kappa[1]))
+  range_int_S = c(sqrt(8)/exp(run$pl$log_kappa_intensity[1]),sqrt(8)/exp(run$pl$log_kappa_intensity[1] +  rev(qq)*run$plSd$log_kappa_intensity[1]))
+  range_int_ST = c(sqrt(8)/exp(run$pl$log_kappa_intensity[2]),sqrt(8)/exp(run$pl$log_kappa_intensity[2] +  rev(qq)*run$plSd$log_kappa_intensity[2]))
   
   half_stripe_widthG = list()
   for(i in 1:length(run$pl$beta_g)){
@@ -83,7 +86,7 @@ partable_derived <-function(run,sdrep_bc = NULL,CI_level=0.95){
 
   range_psi = exp(c(run$rl$log_range_psi[1], run$rl$log_range_psi[1]+ qq*run$rlSd$log_range_psi[1]))
   k_psi = c(run$rl$k_psi, run$rl$k_psi[1] + qq*run$rlSd$k_psi[1])
-  range_size = c(sqrt(8)/exp(run$pl$log_kappa[2]),sqrt(8)/exp(run$pl$log_kappa[2] + rev(qq)*run$plSd$log_kappa[2]))
+  range_size = c(sqrt(8)/exp(run$pl$log_kappa_size[1]),sqrt(8)/exp(run$pl$log_kappa_size[1] + rev(qq)*run$plSd$log_kappa_size[1]))
   abundance = exp(c(run$rl$logAbundance[1],run$rl$logAbundance[1] + qq*run$rlSd$logAbundance[1]))
   if(!is.null(sdrep_bc)){
     rlBiasCorr = as.list(sdrep_bc,"Est. (bias.correct)", report = TRUE)
@@ -93,7 +96,7 @@ partable_derived <-function(run,sdrep_bc = NULL,CI_level=0.95){
     abundanceBiasCorrected = c(NA,NA,NA)
   }
 
-  parTabTmp = rbind(range_int)
+  parTabTmp = rbind(range_int_S,range_int_ST)
   parTab = rbind(parTabTmp,do.call(rbind,half_stripe_widthG))
   rownames(parTab) = c(rownames(parTabTmp),paste0("half_stripe_widthG",1:length(run$pl$beta_g)))
   parTab = rbind(parTab,range_psi,k_psi,range_size,abundance,abundanceBiasCorrected)
@@ -101,13 +104,13 @@ partable_derived <-function(run,sdrep_bc = NULL,CI_level=0.95){
   
   colnames(parTab) <- c("Est","CI_L","CI_U")
   # Setting estimates to NA if not estimated
-  if(!is.null(run$map$x)){
-    parTab[rownames(parTab)=="range_int",] = NA
-  }
-  if(!is.null(run$map$log_mu)){
-    parTab[rownames(parTab)=="range_psi",] = NA
-    parTab[rownames(parTab)=="k_psi",] = NA
-  }
+#  if(!is.null(run$map$x)){
+#    parTab[rownames(parTab)=="range_int",] = NA
+#  }
+#  if(!is.null(run$map$log_mu)){
+#    parTab[rownames(parTab)=="range_psi",] = NA
+#    parTab[rownames(parTab)=="k_psi",] = NA
+#  }
   return(parTab)
 }
 
