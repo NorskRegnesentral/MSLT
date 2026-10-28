@@ -10,9 +10,6 @@ pred_biascorrect = function(fit,year_area_idx = NULL,nSplit = 10,sd = FALSE){
   
   startTime <- Sys.time()
   
-  #saveRDS(fitSim[[1]],"fitExample.Rdata")
-  #fit = readRDS("fitExample.Rdata")
-  #year_area_idx = data.frame(year = 2021:2026,panel = rep("EN",6))
   if(is.null(year_area_idx)){
     idx = which(names(fit$rep$value) == "logAbundance_panels_matrix" | names(fit$rep$value) == "logAbundance_vector")
     splits <- split(idx, cut(seq_along(idx),
@@ -27,11 +24,10 @@ pred_biascorrect = function(fit,year_area_idx = NULL,nSplit = 10,sd = FALSE){
     panel_names = fit$obj$report()$panel_names
     logAbundance_panels_matrix = matrix(idx,nrow = fit$data$nYear,ncol = length(panel_names))
     colnames(logAbundance_panels_matrix) = colnames(fit$rl$logAbundance_panels_matrix)
-    rownames(logAbundance_panels_matrix) = rownames(logAbundance_panels_matrix)
+    rownames(logAbundance_panels_matrix) = rownames(fit$rl$logAbundance_panels_matrix)
     
     split = list(logAbundance_panels_matrix[cbind(as.character(year_area_idx$year),year_area_idx$panel)])
     
-    print(split)
     sdrep_biascorrect = RTMB::sdreport(fit$obj,bias.correct = TRUE,
                                        bias.correct.control = list(sd = sd, split = split, nsplit = NULL))
     
