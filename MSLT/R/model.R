@@ -64,8 +64,8 @@ mslt = function(par,data){
       d = 2; #Part of spatial pc-prior
       R = -log(pcPriorsRange_intensity[2])*pcPriorsRange_intensity[1]^(d/2)
       S = -log(pcPriorsSD_intensity[2])/pcPriorsSD_intensity[1];
-      rhoP = sqrt(8)/kappa_intensity[1];
-      nll = nll- log( d/2 * R *S *rhoP^(-1-d/2)* exp(-R* rhoP^(-d/2) -S* sigma_intensity[1] )); #pc-prior contribution
+      rhoP = sqrt(8)/kappa_intensity[2];
+      nll = nll- log( d/2 * R *S *rhoP^(-1-d/2)* exp(-R* rhoP^(-d/2) -S* sigma_intensity[2] )); #pc-prior contribution
     }
   }
   
