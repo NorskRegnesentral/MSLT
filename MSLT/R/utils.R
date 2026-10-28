@@ -47,17 +47,18 @@ print.jit<-function(jit,...){
 
   run = attributes(jit)$run
 
-  scale = 1/((4*3.14159265)*exp(run$pl$log_kappa*2))
-
+  scale_intensity =1/((4*pi)*exp(run$pl$log_kappa_intensity)*exp(run$pl$log_kappa_intensity))
+  
   maxabsdiff <- apply(abs(do.call(cbind, lapply(j2, function(f)unlist(f$pl)-unlist(run$pl)))),1,max)
   maxlist <- utils::relist(maxabsdiff, run$pl)
   ret <- as.data.frame(unlist(lapply(maxlist,function(x)if(length(x)>0)max(x) else NULL)))
   logLik <- max(abs(unlist(lapply(j2, logLik))-logLik(run)))
-  abundance <- max(unlist(lapply(j2, function(f)abs(f$rl$logAbundance-run$rl$logAbundance))))
-  ret <- rbind(ret,  logLik=logLik, abundance = abundance)
+  abundance <- max(unlist(lapply(j2, function(f)abs(f$rl$logAbundance_vector-run$rl$logAbundance_vector))))
+  abundance_panels <- max(unlist(lapply(j2, function(f)abs(f$rl$logAbundance_panels_matrix-run$rl$logAbundance_panels_matrix))))
+  ret <- rbind(ret,  logLik=logLik, abundance = abundance,abundance_panels = abundance_panels)
   names(ret) <- "max(|delta|)"
-  ret[which(rownames(ret)=="x_intensity"),] = ret[which(rownames(ret)=="x_intensity"),]/sqrt(scale[1]) *exp(run$pl$log_sigma[1])
-  ret[which(rownames(ret)=="x_size"),] = ret[which(rownames(ret)=="x_size"),]/sqrt(scale[2]) *exp(run$pl$log_sigma[2])
+  ret[which(rownames(ret)=="x_intensity_S"),] = ret[which(rownames(ret)=="x_intensity_S"),]/sqrt(scale_intensity[1]) *exp(run$pl$log_sigma_intensity[1])
+  ret[which(rownames(ret)=="x_intensity_ST"),] = ret[which(rownames(ret)=="x_intensity_ST"),]/sqrt(scale_intensity[2]) *exp(run$pl$log_sigma_intensity[2])
 
   print(ret)
   print(paste0("Proportion convergence: ", length(j2)/length(jit)))

@@ -23,7 +23,7 @@ fitMSLT = function(data,par,conf,rel.tol=1e-10,map = setMap(conf, par),ridge.cor
   }
   lower = list()
   lower$log_c_mmpp = -10#NB, set lower boundary on jump in MMPP
-
+  
   fit = tryCatch({
     opt <- nlminb(obj$par, obj$fn, obj$gr,control = list(rel.tol = rel.tol,trace = 1,iter.max = 1000,eval.max = 2000),lower = lower)
     rep = RTMB::sdreport(obj, ...)
@@ -74,9 +74,18 @@ jit = function(run, sd = 0.2, nojit = 50,ncores = 2){
   parv <- unlist(par)
   parsTmp <- lapply(1:nojit, function(i)relist(parv+rnorm(length(parv),sd=sd), par))
   pars =  lapply(parsTmp, function(p){
-    scale =1/((4*3.14159265)*exp(p$log_kappa)*exp(p$log_kappa))
-    p$x_intensity = p$x_intensity*sqrt(scale[1])
-    p$x_size = p$x_size*sqrt(scale[2])
+    scale_intensity =1/((4*pi)*exp(p$log_kappa_intensity)*exp(p$log_kappa_intensity))
+    p$x_intensity_S = p$x_intensity_S*sqrt(scale_intensity[1])
+    p$x_intensity_ST = p$x_intensity_ST*sqrt(scale_intensity[2])
+    if(run$conf$space_intensity_matern==0){
+      p$x_intensity_S = p$x_intensity_S*0
+    }
+    if(run$conf$spaceTime_intensity_maternAR1==0){
+      p$x_intensity_ST = p$x_intensity_ST*0
+    }
+    if(run$conf$spaceTime_intensity_maternAR1 !=2){
+      p$logit_rho_intensity = 0
+    }
     p
   })
 
