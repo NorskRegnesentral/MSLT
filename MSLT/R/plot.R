@@ -9,6 +9,11 @@
 #' @export
 plot_spatial = function(fit,year = NULL, sd = FALSE,spatial_stationary = TRUE,spatio_temporal = TRUE){
 
+  
+  if(is.null(year) & spatio_temporal){
+    stop("Select a year to plot spatio-temporal structure.")
+  }
+  
   panels_utm = attributes(fit$data)$panels_utm
   survey_year = attributes(fit$data)$surveyData
   survey_year = survey_year[survey_year$year==year,]
