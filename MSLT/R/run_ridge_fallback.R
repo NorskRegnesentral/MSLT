@@ -21,7 +21,11 @@ fitMSLT_fallback_ridge = function(data,par,conf,map = setMap(conf, par),ridge.co
   
   surveyData = attributes(data)$surveyData
   
-  run = fitMSLT(data,par,conf, map = map, getJointPrecision = TRUE)
+  run = fitMSLT(data,par,conf, map = map, getJointPrecision = TRUE,...)
+  if(is.na(run[1])){
+    print("fitMSTL failed, NA returned")
+    return(run)
+  }
   sdrep = run$rep
   if(run$opt$convergence==0){
     return(run)
@@ -104,7 +108,7 @@ fitMSLT_fallback_ridge = function(data,par,conf,map = setMap(conf, par),ridge.co
     print("Transects with ridge.correct points:" )
     print(id_ridge_used)
     
-    runs[[i]] = fitMSLT(data,par,conf,ridge.correct = TRUE,getJointPrecision = TRUE)
+    runs[[i]] = fitMSLT(data,par,conf, map = map,ridge.correct = TRUE,getJointPrecision = TRUE)
 
     if(runs[[i]]$opt$convergence==0 | i > n_trials){
       print(paste0("Converged in trial ",i,"."))
