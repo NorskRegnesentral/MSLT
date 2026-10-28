@@ -11,10 +11,15 @@ pred_biascorrect = function(fit,year_area_idx = NULL,nSplit = 10,sd = FALSE){
   startTime <- Sys.time()
   
   if(is.null(year_area_idx)){
-    idx = which(names(fit$rep$value) == "logAbundance_panels_matrix" | names(fit$rep$value) == "logAbundance_vector")
-    splits <- split(idx, cut(seq_along(idx),
+    idx = which(names(fit$rep$value) == "logAbundance_panels_matrix" | names(fit$rep$value) == "logAbundance_vector" | names(fit$rep$value) == "logAbundance")
+    if(nSplit>1){
+      splits <- split(idx, cut(seq_along(idx),
                            breaks = nSplit,
                            labels = FALSE))
+    }else{
+      splits = list(idx)
+    }
+    
     
     sdrep_biascorrect = RTMB::sdreport(fit$obj,bias.correct = TRUE,
                                        bias.correct.control = list(sd = sd, split = splits, nsplit = NULL))
