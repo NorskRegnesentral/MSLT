@@ -147,11 +147,7 @@ We can inspect the derived model parameters reported in Table 2 by calling `part
 Bias correction can be performed like this:
 
 ```r
-index = list(run$obj$env$ADreportIndex()$logAbundance) #Only do bias-correction for estimated abundance
-sdrep <- TMB::sdreport(run$obj,
-                               bias.correct = TRUE,
-                               bias.correct.control = list(split = index,sd = TRUE),
-                               getReportCovariance = FALSE)
+bc = pred_biascorrect(run,nSplit = 1,sd = TRUE)
 ```
 
 
@@ -159,18 +155,18 @@ sdrep <- TMB::sdreport(run$obj,
 We can inspect the bias-corrected abundance estimate reported in Table 2 in https://doi.org/10.1080/01621459.2025.2566422:
 
 ```r
-partable_derived(run,sdrep)
+partable_derived(run, bc$sdrep_biascorrect)
 ```
 
 
 ## Estimate simpler submodels
-The different submodels can be estimated by modifying the `conf` object accordingly: 
+The different submodels can be estimated by modifying the `conf` object accordingly (similarly for space-time): 
 
-SPDE: To estimate the SPDE-only model, set `conf$mmpp = 0` and `conf$matern_intensity = 1`. 
+SPDE: To estimate the SPDE-only model, set `conf$mmpp = 0` and `conf$space_intensity_matern = 1`. 
 
-MMPP: To estimate the MMPP-only model, set `conf$mmpp = 1` and `conf$matern_intensity = 0`.
+MMPP: To estimate the MMPP-only model, set `conf$mmpp = 1` and `conf$space_intensity_matern = 0`.
 
-HPP: To estimate the HPP model, set both `conf$mmpp = 0` and `conf$matern_intensity = 0`.
+HPP: To estimate the HPP model, set both `conf$mmpp = 0` and `conf$space_intensity_matern = 0`.
 
 Only number of groups: To estimate only the number of groups, set `conf$applyPodSize = 0`.
 
