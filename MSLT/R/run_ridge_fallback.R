@@ -52,58 +52,83 @@ fitMSLT_fallback_ridge = function(data,par,conf,map = setMap(conf, par),ridge.co
     }
     i = i+1
     
-    #Save the immage in case it gets an error
-    print("Save to check the rare cases it gets a strange error")
-    save.image("everything.RData")
+    tryCatch({
     
-    H <- sdrep$jointPrecision
-    ii_ST_H= which(colnames(H) %in% c("x_intensity_S","x_intensity_ST"))
-    H_ST = H[ii_ST_H,ii_ST_H]
-    H_ST_dg <- as(H_ST, "dgCMatrix")
-    print("Find smallest eigenvalue")
-    ev <- RSpectra::eigs_sym(H_ST_dg, k = 1, which = "SA")
-    v <- ev$vectors[, 1]  # eigen vector with smallest eigenvalue
-    print("Found smallest eigenvalue")
-    vS  <- v[ii_S]
-    vST <- v[ii_ST]
-    
-    signal_S <- as.vector(
-      data$AalongLines_S %*% vS
-    )
-    
-    vST_mat <- matrix(
-      vST,
-      nrow = nMesh,
-      ncol = data$nYear
-    )
-    
-    signal_ST <- rep(0, nrow(data$AalongLines_S))
-    print("Calculate contribution1")
-    
-    for (t in 1:data$nYear) {
-      idx <- which(
-        data$year == min(data$year) + t - 1
+      H <- sdrep$jointPrecision
+      ii_ST_H= which(colnames(H) %in% c("x_intensity_S","x_intensity_ST"))
+      H_ST = H[ii_ST_H,ii_ST_H]
+      H_ST_dg <- as(H_ST, "dgCMatrix")
+      print("Find smallest eigenvalue")
+      ev <- RSpectra::eigs_sym(H_ST_dg, k = 1, which = "SA")
+      v <- ev$vectors[, 1]  # eigen vector with smallest eigenvalue
+      print("Found smallest eigenvalue")
+      vS  <- v[ii_S]
+      vST <- v[ii_ST]
+      
+      signal_S <- as.vector(
+        data$AalongLines_S %*% vS
       )
-      signal_ST[idx] <-
-        as.vector(
-          data$AalongLines_ST[[t]] %*%
-            vST_mat[, t]
+      
+      vST_mat <- matrix(
+        vST,
+        nrow = nMesh,
+        ncol = data$nYear
+      )
+      
+      signal_ST <- rep(0, nrow(data$AalongLines_S))
+      print("Calculate contribution1")
+      
+      for (t in 1:data$nYear) {
+        idx <- which(
+          data$year == min(data$year) + t - 1
         )
-    }
-    
-    signal_total <- signal_S + signal_ST
-    print("Calculate contribution2")
-    
-    score <- tapply(
-      signal_total^2,
-      surveyData$transect_id,
-      sum#mean
-    )
-    score = sort(score, decreasing = TRUE)
-    
-    if(length(id_ridge_used)>0){
-      score = score[!(names(score) %in%id_ridge_used)]
-    }
+        signal_ST[idx] <-
+          as.vector(
+            data$AalongLines_ST[[t]] %*%
+              vST_mat[, t]
+          )
+      }
+      
+      signal_total <- signal_S + signal_ST
+      print("Calculate contribution2")
+      
+      score <- tapply(
+        signal_total^2,
+        surveyData$transect_id,
+        sum#mean
+      )
+      score = sort(score, decreasing = TRUE)
+      
+      if(length(id_ridge_used)>0){
+        score = score[!(names(score) %in%id_ridge_used)]
+      }
+    }, error = function(e){
+      
+      saveRDS(
+        list(
+          error = conditionMessage(e),
+          i = i,
+          data = data,
+          surveyData = surveyData,
+          sdrep = sdrep,
+          ii_S = ii_S,
+          ii_ST = ii_ST,
+          nMesh = nMesh,
+          
+          H = if(exists("H")) H else NULL,
+          ii_ST_H = if(exists("ii_ST_H")) ii_ST_H else NULL,
+          H_ST = if(exists("H_ST")) H_ST else NULL,
+          ev = if(exists("ev")) ev else NULL,
+          v = if(exists("v")) v else NULL,
+          signal_S = if(exists("signal_S")) signal_S else NULL,
+          signal_ST = if(exists("signal_ST")) signal_ST else NULL,
+          signal_total = if(exists("signal_total")) signal_total else NULL
+        ),
+        file = paste0("debug_trial_", i, ".rds")
+      )
+      
+      stop(e)
+    })
     print(head(score,10))
     
     problemTransects = names(score)[1:nTransect_ridge]
