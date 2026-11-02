@@ -56,7 +56,8 @@ mslt = function(par,data){
       RTMB::dautoreg(x,
                mu = 0,
                phi = rho_intensity,
-               log = TRUE)
+               log = TRUE,
+               scale = 1 / sqrt(1 - rho_intensity^2))
     }
     nll <- nll - RTMB::dseparable(f1, f2)(x_intensity_ST)
   
