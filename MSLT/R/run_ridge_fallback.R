@@ -52,6 +52,10 @@ fitMSLT_fallback_ridge = function(data,par,conf,map = setMap(conf, par),ridge.co
     }
     i = i+1
     
+    #Save the immage in case it gets an error
+    print("Save to check the rare cases it gets a strange error")
+    save.image("everything.RData")
+    
     H <- sdrep$jointPrecision
     ii_ST_H= which(colnames(H) %in% c("x_intensity_S","x_intensity_ST"))
     H_ST = H[ii_ST_H,ii_ST_H]
@@ -59,6 +63,7 @@ fitMSLT_fallback_ridge = function(data,par,conf,map = setMap(conf, par),ridge.co
     print("Find smallest eigenvalue")
     ev <- RSpectra::eigs_sym(H_ST_dg, k = 1, which = "SA")
     v <- ev$vectors[, 1]  # eigen vector with smallest eigenvalue
+    print("Found smallest eigenvalue")
     vS  <- v[ii_S]
     vST <- v[ii_ST]
     
@@ -73,6 +78,7 @@ fitMSLT_fallback_ridge = function(data,par,conf,map = setMap(conf, par),ridge.co
     )
     
     signal_ST <- rep(0, nrow(data$AalongLines_S))
+    print("Calculate contribution1")
     
     for (t in 1:data$nYear) {
       idx <- which(
@@ -86,6 +92,7 @@ fitMSLT_fallback_ridge = function(data,par,conf,map = setMap(conf, par),ridge.co
     }
     
     signal_total <- signal_S + signal_ST
+    print("Calculate contribution2")
     
     score <- tapply(
       signal_total^2,
