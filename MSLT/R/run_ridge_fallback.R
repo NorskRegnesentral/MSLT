@@ -47,12 +47,12 @@ fitMSLT_fallback_ridge = function(data,par,conf,map = setMap(conf, par),ridge.co
   nMesh <- attributes(data)$mesh$n
   id_ridge_used = NULL
   while(!done) {
-    if(i>0){
-      sdrep = runs[[i]]$rep
-    }
-    i = i+1
-    
     tryCatch({
+      if(i>0){
+        sdrep = runs[[i]]$rep
+      }
+      i = i+1
+    
     
       H <- sdrep$jointPrecision
       ii_ST_H= which(colnames(H) %in% c("x_intensity_S","x_intensity_ST"))
@@ -102,11 +102,49 @@ fitMSLT_fallback_ridge = function(data,par,conf,map = setMap(conf, par),ridge.co
       if(length(id_ridge_used)>0){
         score = score[!(names(score) %in%id_ridge_used)]
       }
+    
+      print(head(score,10))
+      
+      problemTransects = names(score)[1:nTransect_ridge]
+      id_ridge_used = c(id_ridge_used,problemTransects)
+      for(id in problemTransects){
+        if(!is.na(id)){
+          data$ridgeCorrectLine[which(surveyData$transect==id)] = 1
+          
+          rawObs = surveyData[surveyData$code==2,]
+          if(length(which(rawObs$transect==id))>0){
+            data$ridgeCorrectObservations[which(rawObs$transect==id)] = 1
+          }
+        }
+      }
+      print(paste0("Number of ridge.correct points: " , sum(data$ridgeCorrectLine)  ))
+      print("Transects with ridge.correct points:" )
+      print(id_ridge_used)
+      
+      runs[[i]] = fitMSLT(data,par,conf, map = map,ridge.correct = TRUE,getJointPrecision = TRUE)
+  
+      if(identical(runs[[i]], NA)){
+        print("Ridge-corrected fit failed, NA returned")
+        print(i)
+        return(runs[[i]])
+      }
+      
+      if(runs[[i]]$opt$convergence==0 | i > n_trials){
+        print(paste0("Converged in trial ",i,"."))
+        done = TRUE
+      }else{
+        runs[[i]]$obj = NULL
+        gc()
+        print("Did not converge")
+        print(i)
+        print(runs[[i]]$rep)
+      }
     }, error = function(e){
       
       saveRDS(
         list(
           error = conditionMessage(e),
+          calls = sys.calls(),
           i = i,
           data = data,
           surveyData = surveyData,
@@ -124,47 +162,11 @@ fitMSLT_fallback_ridge = function(data,par,conf,map = setMap(conf, par),ridge.co
           signal_ST = if(exists("signal_ST")) signal_ST else NULL,
           signal_total = if(exists("signal_total")) signal_total else NULL
         ),
-        file = paste0("debug_trial_", i, ".rds")
+        file = paste0("debug_trial_", i,"_", Sys.getpid(), ".rds")
       )
       
       stop(e)
     })
-    print(head(score,10))
-    
-    problemTransects = names(score)[1:nTransect_ridge]
-    id_ridge_used = c(id_ridge_used,problemTransects)
-    for(id in problemTransects){
-      if(!is.na(id)){
-        data$ridgeCorrectLine[which(surveyData$transect==id)] = 1
-        
-        rawObs = surveyData[surveyData$code==2,]
-        if(length(which(rawObs$transect==id))>0){
-          data$ridgeCorrectObservations[which(rawObs$transect==id)] = 1
-        }
-      }
-    }
-    print(paste0("Number of ridge.correct points: " , sum(data$ridgeCorrectLine)  ))
-    print("Transects with ridge.correct points:" )
-    print(id_ridge_used)
-    
-    runs[[i]] = fitMSLT(data,par,conf, map = map,ridge.correct = TRUE,getJointPrecision = TRUE)
-
-    if(identical(runs[[i]], NA)){
-      print("Ridge-corrected fit failed, NA returned")
-      print(i)
-      return(runs[[i]])
-    }
-    
-    if(runs[[i]]$opt$convergence==0 | i > n_trials){
-      print(paste0("Converged in trial ",i,"."))
-      done = TRUE
-    }else{
-      runs[[i]]$obj = NULL
-      gc()
-      print("Did not converge")
-      print(i)
-      print(runs[[i]]$rep)
-    }
   }
   run_first = run
   run = runs[[i]]
