@@ -14,10 +14,12 @@
 #' @param ridge.correct Activates ridge.correct in MakeADFun
 #' @param nTransect_ridge Number of transects that are selected for ridge correction in each iteration
 #' @param n_trials Maximum number of iterations.
+#' @param ridge_early_stop Activates early stop if gradiend suddenly increases above max_mgc after have been below best_mgc_limit.
 #' @param ... additional parameters passed to sdreport 
 #' @return fitted model
 #' @export
-fitMSLT_fallback_ridge = function(data,par,conf,map = setMap(conf, par),ridge.correct = FALSE,nTransect_ridge = 5,n_trials = 20,...){
+fitMSLT_fallback_ridge = function(data,par,conf,map = setMap(conf, par),ridge.correct = FALSE,nTransect_ridge = 5,n_trials = 20,
+                                  ridge_early_stop = list(activated = FALSE,max_mgc = 10000,best_mgc_limit=100), ...){
   
   if(conf$spaceTime_intensity_maternAR1==0){
     stop("fitMSLT_fallback_ridge currently is only implemented for when both space_inteinsity and space-time_inteinsity are activated")
@@ -28,15 +30,18 @@ fitMSLT_fallback_ridge = function(data,par,conf,map = setMap(conf, par),ridge.co
   
   surveyData = attributes(data)$surveyData
   
-  run = fitMSLT(data,par,conf, map = map, getJointPrecision = TRUE,...)
+  run = fitMSLT(data,par,conf, map = map, getJointPrecision = TRUE,ridge_early_stop = ridge_early_stop,...)
   if(is.na(run[1])){
     print("fitMSTL failed, NA returned")
     return(run)
   }
   sdrep = run$rep
-  if(run$opt$convergence==0){
-    return(run)
+  if(!is.null(run$opt)){
+    if(run$opt$convergence==0){
+      return(run)
+    }
   }
+
 
   runs = list()
   done = FALSE
@@ -58,11 +63,12 @@ fitMSLT_fallback_ridge = function(data,par,conf,map = setMap(conf, par),ridge.co
       ii_ST_H= which(colnames(H) %in% c("x_intensity_S","x_intensity_ST"))
       H_ST = H[ii_ST_H,ii_ST_H]
       H_ST_dg <- as(H_ST, "dgCMatrix")
-      eps <- 1e-8
+      eps <- 1e-6
       H_ST_dg <- H_ST_dg +
         Matrix::Diagonal(nrow(H_ST_dg), eps)
       print("Find smallest eigenvalue")
-      ev <- RSpectra::eigs_sym(H_ST_dg, k = 1, which = "SA")
+      ev <- RSpectra::eigs_sym(H_ST_dg, k = 1, which = "SA",
+                               opts = list(tol = 1e-6, niter = 1e4))
       v <- ev$vectors[, 1]  # eigen vector with smallest eigenvalue
       print("Found smallest eigenvalue")
       vS  <- v[ii_S]
@@ -124,7 +130,7 @@ fitMSLT_fallback_ridge = function(data,par,conf,map = setMap(conf, par),ridge.co
       print("Transects with ridge.correct points:" )
       print(id_ridge_used)
       
-      runs[[i]] = fitMSLT(data,par,conf, map = map,ridge.correct = TRUE,getJointPrecision = TRUE)
+      runs[[i]] = fitMSLT(data,par,conf, map = map,ridge.correct = TRUE,getJointPrecision = TRUE, ridge_early_stop = ridge_early_stop)
   
       if(identical(runs[[i]], NA)){
         print("Ridge-corrected fit failed, NA returned")
@@ -132,7 +138,7 @@ fitMSLT_fallback_ridge = function(data,par,conf,map = setMap(conf, par),ridge.co
         return(runs[[i]])
       }
       
-      if(runs[[i]]$opt$convergence==0 | i > n_trials){
+      if((!is.null(runs[[i]]$opt)) && (runs[[i]]$opt$convergence==0)){
         print(paste0("Converged in trial ",i,"."))
         done = TRUE
       }else{
@@ -141,6 +147,12 @@ fitMSLT_fallback_ridge = function(data,par,conf,map = setMap(conf, par),ridge.co
         print("Did not converge")
         print(i)
         print(runs[[i]]$rep)
+      }
+      
+      if(i>n_trials){
+        print("Did not converge, stop search")
+        done = TRUE
+        
       }
     }, error = function(e){
       

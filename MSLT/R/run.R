@@ -5,10 +5,12 @@
 #' @param conf model configurations list  returned by \code{\link{defConf}}
 #' @param map map object used by TMB to couple and remove parameters
 #' @param ridge.correct Activates ridge.correct in MakeADFun
+#' @param ridge_early_stop Activates early stop if gradiend suddenly increases above max_mgc after have been below best_mgc_limit.
 #' @param ... additional parameters passed to sdreport 
 #' @return fitted model
 #' @export
-fitMSLT = function(data,par,conf,rel.tol=1e-10,map = setMap(conf, par),ridge.correct = FALSE,...){
+fitMSLT = function(data,par,conf,rel.tol=1e-10,map = setMap(conf, par),ridge.correct = FALSE,
+                   ridge_early_stop = list(activated = FALSE,max_mgc = 10000,best_mgc_limit=100) ,...){
 
   #Estimating the model and extract results-------------
   startTime <- Sys.time()
@@ -24,26 +26,83 @@ fitMSLT = function(data,par,conf,rel.tol=1e-10,map = setMap(conf, par),ridge.cor
   lower = list()
   lower$log_c_mmpp = -10#NB, set lower boundary on jump in MMPP
   
-  fit = tryCatch({
-    opt <- nlminb(obj$par, obj$fn, obj$gr,control = list(rel.tol = rel.tol,trace = 1,iter.max = 1000,eval.max = 2000),lower = lower)
-    rep = RTMB::sdreport(obj, ...)
-    pl = as.list(rep,"Est")
-    plSd = as.list(rep,"Std")
-    rl = as.list(rep, what = "Est", report = TRUE)
-    rlSd = as.list(rep, what = "Std", report = TRUE)
-    list(obj = obj, opt = opt,rep = rep, map = map, conf = conf, data = data,pl = pl, plSd = plSd, rl = rl, rlSd = rlSd)},
-  error=function(cond) {
-    print("NB!!! Optization failed!")
-    NA
+  
+  
+  best_mgc = Inf
+  fn_guard <- local({
+    function(par) {
+      objective <- obj$fn(par)
+      mgc <- max(abs(obj$gr(par)))
+      if (!is.na(mgc)) {
+        best_mgc <<- min(best_mgc, mgc)
+        if (best_mgc < ridge_early_stop$best_mgc_limit && mgc > ridge_early_stop$max_mgc) {
+          stop(
+            structure(
+              list(
+                message = sprintf(
+                  "Aborting: mgc = %.2e (best seen %.2e)",
+                  mgc, best_mgc
+                )
+              ),
+              class = c("mgc_abort", "error", "condition")
+            )
+          )
+        }
+      }
+      
+      objective
+    }
   })
+  
+  
+  if(ridge_early_stop$activated){
+    fit = tryCatch({
+      opt = NULL
+      opt <- nlminb(obj$par, fn_guard, obj$gr,control = list(rel.tol = rel.tol,trace = 1,iter.max = 1000,eval.max = 2000),lower = lower)
+      
+      rep = RTMB::sdreport(obj, ...)
+      pl = as.list(rep,"Est")
+      plSd = as.list(rep,"Std")
+      rl = as.list(rep, what = "Est", report = TRUE)
+      rlSd = as.list(rep, what = "Std", report = TRUE)
+      list(obj = obj, opt = opt,rep = rep, map = map, conf = conf, data = data,pl = pl, plSd = plSd, rl = rl, rlSd = rlSd)},
+      error=function(cond) {
+        
+        if (grepl("^Aborting: mgc", cond$message)) {
+          rep = RTMB::sdreport(obj,getJointPrecision = TRUE,skip.delta.method = TRUE)
+          pl = as.list(rep,"Est")
+          plSd = as.list(rep,"Std")
+          rl = as.list(rep, what = "Est", report = TRUE)
+          rlSd = as.list(rep, what = "Std", report = TRUE)
+          return(list(obj = obj, opt = NULL,rep = rep, map = map, conf = conf, data = data,pl = pl, plSd = plSd, rl = rl, rlSd = rlSd))
+        }
+        
+        print("NB!!! Optization failed!")
+        NA
+      })
+  }else{
+    fit = tryCatch({
+      opt <- nlminb(obj$par, obj$fn, obj$gr,control = list(rel.tol = rel.tol,trace = 1,iter.max = 1000,eval.max = 2000),lower = lower)
+      rep = RTMB::sdreport(obj, ...)
+      pl = as.list(rep,"Est")
+      plSd = as.list(rep,"Std")
+      rl = as.list(rep, what = "Est", report = TRUE)
+      rlSd = as.list(rep, what = "Std", report = TRUE)
+      list(obj = obj, opt = opt,rep = rep, map = map, conf = conf, data = data,pl = pl, plSd = plSd, rl = rl, rlSd = rlSd)},
+      error=function(cond) {
+        print("NB!!! Optization failed!")
+        NA
+      })
+  }
+
   endTime = Sys.time()
   timeUsed = endTime - startTime
   print(timeUsed)
 
- if(length(fit)==1){
-   return(NA)
- }
- if(conf$spaceTime_intensity_maternAR1!=0 & fit$opt$convergence==0 ){
+  if(length(fit)==1){
+    return(NA)
+  }
+  if(conf$spaceTime_intensity_maternAR1!=0 ){#& fit$opt$convergence==0 ){
    panel_names = fit$obj$report()$panel_names
    colnames(fit$rl$logAbundance_panels_matrix) = panel_names
    rownames(fit$rl$logAbundance_panels_matrix) = min(fit$data$year):max(fit$data$year)
@@ -51,9 +110,9 @@ fitMSLT = function(data,par,conf,rel.tol=1e-10,map = setMap(conf, par),ridge.cor
    colnames(fit$rlSd$logAbundance_panels_matrix) = panel_names
    rownames(fit$rlSd$logAbundance_panels_matrix) = min(fit$data$year):max(fit$data$year)
    names(fit$rlSd$logAbundance_vector)= min(fit$data$year):max(fit$data$year)
- }
+  }
   
-  
+
   class(fit) = "mslt"
   return(fit)
 }

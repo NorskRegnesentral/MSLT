@@ -13,6 +13,7 @@ fitMSLT_fallback_ridge(
   ridge.correct = FALSE,
   nTransect_ridge = 5,
   n_trials = 20,
+  ridge_early_stop = list(activated = FALSE, max_mgc = 10000, best_mgc_limit = 100),
   ...
 )
 }
@@ -30,6 +31,8 @@ fitMSLT_fallback_ridge(
 \item{nTransect_ridge}{Number of transects that are selected for ridge correction in each iteration}
 
 \item{n_trials}{Maximum number of iterations.}
+
+\item{ridge_early_stop}{Activates early stop if gradiend suddenly increases above max_mgc after have been below best_mgc_limit.}
 
 \item{...}{additional parameters passed to sdreport}
 }
