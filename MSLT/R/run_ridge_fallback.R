@@ -14,11 +14,11 @@
 #' @param ridge.correct Activates ridge.correct in MakeADFun
 #' @param nTransect_ridge Number of transects that are selected for ridge correction in each iteration
 #' @param n_trials Maximum number of iterations.
-#' @param ridge_early_stop Activates early stop if gradiend suddenly increases above max_mgc after have been below best_mgc_limit.
+#' @param ridge_early_stop Activates early stop if gradient increases above max_mgc after have been below best_mgc_limit.
 #' @param ... additional parameters passed to sdreport 
 #' @return fitted model
 #' @export
-fitMSLT_fallback_ridge = function(data,par,conf,map = setMap(conf, par),ridge.correct = FALSE,nTransect_ridge = 5,n_trials = 20,
+fitMSLT_fallback_ridge = function(data,par,conf,map = setMap(conf, par),ridge.correct = FALSE,nTransect_ridge = 5,n_trials = 50,
                                   ridge_early_stop = list(activated = FALSE,max_mgc = 10000,best_mgc_limit=100), ...){
   
   if(conf$spaceTime_intensity_maternAR1==0){
@@ -58,17 +58,37 @@ fitMSLT_fallback_ridge = function(data,par,conf,map = setMap(conf, par),ridge.co
       }
       i = i+1
     
-    
       H <- sdrep$jointPrecision
       ii_ST_H= which(colnames(H) %in% c("x_intensity_S","x_intensity_ST"))
       H_ST = H[ii_ST_H,ii_ST_H]
       H_ST_dg <- as(H_ST, "dgCMatrix")
-      eps <- 1e-6
+      eps <- 1e-10
+      tol = 1e-10 #default in RSpectra::eigs_sym
       H_ST_dg <- H_ST_dg +
         Matrix::Diagonal(nrow(H_ST_dg), eps)
       print("Find smallest eigenvalue")
-      ev <- RSpectra::eigs_sym(H_ST_dg, k = 1, which = "SA",
-                               opts = list(tol = 1e-6, niter = 1e4))
+      foundEigenVec = FALSE
+      counter_internal = 0
+      while(!foundEigenVec){
+        ev <- RSpectra::eigs_sym(H_ST_dg, k = 1, which = "SA",
+                                 opts = list(tol = tol))
+        if(dim(ev$vectors)[2]==0){
+          #Sometimes RSpectra::eigs_sym do not find eigenvector because H_ST_dg is almost singular 
+          tol = tol*10
+          eps = eps*10
+          H_ST_dg <- H_ST_dg +
+            Matrix::Diagonal(nrow(H_ST_dg), eps)
+          print(paste0("Did not find eigenvector, add ", eps, " to diagonal and decrease tolerance to ", tol, " in RSpectra::eigs_sym()"))
+        }else{
+          foundEigenVec =TRUE
+        }
+        counter_internal = counter_internal + 1
+        if(counter_internal>20){
+          print("Stop loop, did not find eigenvector, this should newer happen with large enough eps.")
+          foundEigenVec =TRUE
+        }
+      }
+
       v <- ev$vectors[, 1]  # eigen vector with smallest eigenvalue
       print("Found smallest eigenvalue")
       vS  <- v[ii_S]
@@ -156,12 +176,16 @@ fitMSLT_fallback_ridge = function(data,par,conf,map = setMap(conf, par),ridge.co
       }
     }, error = function(e){
       
+      print("Someting faild, save object to reproduce the error.")
       saveRDS(
         list(
           error = conditionMessage(e),
           calls = sys.calls(),
           i = i,
           data = data,
+          par = par,
+          conf = conf,
+          
           surveyData = surveyData,
           sdrep = sdrep,
           ii_S = ii_S,
