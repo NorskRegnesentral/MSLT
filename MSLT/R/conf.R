@@ -58,7 +58,8 @@ defConf = function(space_intensity_matern = 1,
                    matern_intensity = NULL){
 
   if(!is.null(matern_intensity)){
-    stop(paste0("Option matern_intensity is outdated, plase use space_intensity_matern instead"))
+    stop(paste0("Option matern_intensity is outdated, plase use space_intensity_matern instead. The option matern_intensity was removed when including spatio-temporal structures in MSLT. Note that spatial parameter names has changed accordingly. 
+    To install the older version with the option matern_intensity that was used in https://www.tandfonline.com/doi/full/10.1080/01621459.2025.2566422, you can type in R: remotes::install_github('NorskRegnesentral/MSLT/MSLT', ref = 'f2784e7462bd5dd48509610afc3def7ad709efa7')"))
   }
   conf = list()
   conf$space_intensity_matern = space_intensity_matern 
