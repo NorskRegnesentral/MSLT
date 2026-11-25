@@ -1,6 +1,7 @@
 #' defConf
 #' 
-#' @param matern_intensity 1: include spatial effect in group abundance intensity, 0: not 
+#' @param space_intensity_matern 0: do not include spatial effect in group abundance intensity 1: include spatial effect 
+#' @param spaceTime_intensity_maternAR1 0: do not include space-time effect in group abundance intensity, 1: include space-time effect but no correlation across years 2: include space-time effect with correlation across years
 #' @param mmpp  1: include MMPP in group abundance intensity, 0:not
 #' @param detectionTrunc Distance at which detection is truncated
 #' @param matern_size 1: include spatial effect in group size, 0: not
@@ -25,9 +26,11 @@
 #' @param UTMproj CRS-UTM projection
 #' @param LatLonProj CRS-latitude and longitude projection
 #' @param buffer A buffer (in km) outside of the area of interest. The buffer is used when constructing the boundary input to fmesher::fm_mesh_2d
+#' @param matern_intensity outdated configuration
 #' @return Configurations 
 #' @export
-defConf = function(matern_intensity = 1,
+defConf = function(space_intensity_matern = 1,
+                   spaceTime_intensity_maternAR1 = 0,
                    mmpp = 1,
                    detectionTrunc = -1,
                    matern_size = 1,
@@ -51,10 +54,25 @@ defConf = function(matern_intensity = 1,
                    cellsize = 50,
                    UTMproj = sf::st_crs("+proj=utm +zone=22 +units=km"),
                    LatLonProj =  sf::st_crs("+proj=longlat +datum=WGS84"),
-                   buffer = 0
-                   ){
+                   buffer = 0,
+                   matern_intensity = NULL){
+
+  if (!is.null(matern_intensity)) {
+    stop(
+      paste0(
+        "The option 'matern_intensity' is outdated. Please use 'space_intensity_matern' instead. 'matern_intensity' was removed when spatio-temporal structures were introduced in MSLT. Note that the corresponding spatial parameter names have also changed accordingly. ",
+        "To install the older version used in ",
+        "https://www.tandfonline.com/doi/full/10.1080/01621459.2025.2566422, ",
+        "run:\n\n",
+        "remotes::install_github('NorskRegnesentral/MSLT/MSLT', ",
+        "ref = 'f2784e7462bd5dd48509610afc3def7ad709efa7')"
+      )
+    )
+  }
+
   conf = list()
-  conf$matern_intensity = matern_intensity 
+  conf$space_intensity_matern = space_intensity_matern 
+  conf$spaceTime_intensity_maternAR1 = spaceTime_intensity_maternAR1 
   conf$mmpp = mmpp 
   conf$matern_size = matern_size 
   conf$g_function = g_function 
@@ -90,8 +108,7 @@ defConf = function(matern_intensity = 1,
 #' @export
 setMap = function(conf,par){
   map = list()
-  map$log_sigma =c(0,1)
-  map$log_kappa = c(0,1)
+  
   if(conf$applyPodSize==1 & conf$independentPodSize ==0){
     map$beta_size = c(0,1)
     if(conf$dependentPodSize[1]==0){
@@ -106,10 +123,22 @@ setMap = function(conf,par){
   if(conf$g_function==1){
     map$logB = as.factor(NA)
   }
-  if(conf$matern_intensity==0){ #Remove spatial and mmpp effects.
-    map$x_intensity = as.factor(rep(NA,length(par$x_intensity)))
-    map$log_sigma[1] = NA
-    map$log_kappa[1] = NA
+  if(conf$space_intensity_matern==0 & conf$spaceTime_intensity_matern==0){ #Remove spatial and mmpp effects.
+    map$x_intensity_S = as.factor(rep(NA,length(par$x_intensity_S)))
+    map$x_intensity_ST = as.factor(rep(NA,length(par$x_intensity_ST)))
+    map$log_sigma_intensity = as.factor(c(NA,NA))
+    map$log_kappa_intensity = as.factor(c(NA,NA))
+    map$logit_rho_intensity = as.factor(NA)
+    
+  }else if(conf$space_intensity_matern==0){
+    map$x_intensity_S = as.factor(rep(NA,length(par$x_intensity_S)))
+    map$log_sigma_intensity = as.factor(c(NA,0))
+    map$log_kappa_intensity = as.factor(c(NA,0))
+  }else if(conf$spaceTime_intensity_matern==0){
+    map$x_intensity_ST = as.factor(rep(NA,length(par$x_intensity_ST)))    
+    map$log_sigma_intensity = as.factor(c(0,NA))
+    map$log_kappa_intensity = as.factor(c(0,NA))
+    map$logit_rho_intensity = as.factor(NA)
   }
   if(conf$mmpp==0){
     map$log_c_mmpp = as.factor(NA)
@@ -117,10 +146,13 @@ setMap = function(conf,par){
   }
   if(conf$applyPodSize == 0 | conf$independentPodSize == 0 | conf$matern_size==0){
     map$x_size = as.factor(rep(NA,length(par$x_size)))
-    map$log_sigma[2] = NA
-    map$log_kappa[2] = NA
+    map$log_sigma_size = as.factor(NA)
+    map$log_kappa_size = as.factor(NA)
   }
-  map$log_sigma = as.factor(map$log_sigma)
-  map$log_kappa = as.factor(map$log_kappa)
+  
+  if(conf$spaceTime_intensity_maternAR1 != 2){
+    map$logit_rho_intensity = as.factor(NA)
+  }
+  
   return(map)
 }

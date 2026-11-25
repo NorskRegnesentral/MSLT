@@ -1,0 +1,217 @@
+
+
+#' Fits the MSLT model. If the initial fit fails, the function iteratively applies
+#' ridge correction to a subset of the transects and refits the model.
+#'
+#' Transects are selected iteratively as follows. First, the smallest eigenvalue
+#' of the Hessian of the latent effects is identified. Next, the transects that
+#' contribute most strongly in the direction of the corresponding eigenvector are identified.
+#' 
+#' @param data data list returned by \code{\link{setData}}
+#' @param par parameter list  returned by \code{\link{setPar}}
+#' @param conf model configurations list  returned by \code{\link{defConf}}
+#' @param map map object used by TMB to couple and remove parameters
+#' @param ridge.correct Activates ridge.correct in MakeADFun
+#' @param nTransect_ridge Number of transects that are selected for ridge correction in each iteration
+#' @param n_trials Maximum number of iterations.
+#' @param ridge_early_stop Activates early stop if gradient increases above max_mgc after have been below best_mgc_limit.
+#' @param ... additional parameters passed to sdreport 
+#' @return fitted model
+#' @export
+fitMSLT_fallback_ridge = function(data,par,conf,map = setMap(conf, par),ridge.correct = FALSE,nTransect_ridge = 5,n_trials = 50,
+                                  ridge_early_stop = list(activated = FALSE,max_mgc = 10000,best_mgc_limit=100), ...){
+  
+  if(conf$spaceTime_intensity_maternAR1==0){
+    stop("fitMSLT_fallback_ridge currently is only implemented for when both space_inteinsity and space-time_inteinsity are activated")
+  }
+  if(conf$space_intensity_matern==0){
+    stop("fitMSLT_fallback_ridge currently is only implemented for when both space_inteinsity and space-time_inteinsity are activated")
+  }
+  
+  surveyData = attributes(data)$surveyData
+  
+  run = fitMSLT(data,par,conf, map = map, getJointPrecision = TRUE,ridge_early_stop = ridge_early_stop,...)
+  if(is.na(run[1])){
+    print("fitMSTL failed, NA returned")
+    return(run)
+  }
+  sdrep = run$rep
+  if(!is.null(run$opt)){
+    if(run$opt$convergence==0){
+      return(run)
+    }
+  }
+
+
+  runs = list()
+  done = FALSE
+  i = 0
+  par_names <- names(run$obj$env$par)
+  ii_S  <- which(par_names == "x_intensity_S")- min(which(par_names == "x_intensity_S"))+1
+  ii_ST <- which(par_names == "x_intensity_ST")- min(which(par_names == "x_intensity_S"))+1
+  nMesh <- attributes(data)$mesh$n
+  id_ridge_used = NULL
+  while(!done) {
+    tryCatch({
+      if(i>0){
+        sdrep = runs[[i]]$rep
+      }
+      i = i+1
+    
+      H <- sdrep$jointPrecision
+      ii_ST_H= which(colnames(H) %in% c("x_intensity_S","x_intensity_ST"))
+      H_ST = H[ii_ST_H,ii_ST_H]
+      H_ST_dg <- as(H_ST, "dgCMatrix")
+      eps <- 1e-10
+      tol = 1e-10 #default in RSpectra::eigs_sym
+      H_ST_dg <- H_ST_dg +
+        Matrix::Diagonal(nrow(H_ST_dg), eps)
+      print("Find smallest eigenvalue")
+      foundEigenVec = FALSE
+      counter_internal = 0
+      while(!foundEigenVec){
+        ev <- RSpectra::eigs_sym(H_ST_dg, k = 1, which = "SA",
+                                 opts = list(tol = tol))
+        if(dim(ev$vectors)[2]==0){
+          #Sometimes RSpectra::eigs_sym do not find eigenvector because H_ST_dg is almost singular 
+          tol = tol*10
+          eps = eps*10
+          H_ST_dg <- H_ST_dg +
+            Matrix::Diagonal(nrow(H_ST_dg), eps)
+          print(paste0("Did not find eigenvector, add ", eps, " to diagonal and decrease tolerance to ", tol, " in RSpectra::eigs_sym()"))
+        }else{
+          foundEigenVec =TRUE
+        }
+        counter_internal = counter_internal + 1
+        if(counter_internal>20){
+          print("Stop loop, did not find eigenvector, this should newer happen with large enough eps.")
+          foundEigenVec =TRUE
+        }
+      }
+
+      v <- ev$vectors[, 1]  # eigen vector with smallest eigenvalue
+      print("Found smallest eigenvalue")
+      vS  <- v[ii_S]
+      vST <- v[ii_ST]
+      
+      signal_S <- as.vector(
+        data$AalongLines_S %*% vS
+      )
+      
+      vST_mat <- matrix(
+        vST,
+        nrow = nMesh,
+        ncol = data$nYear
+      )
+      
+      signal_ST <- rep(0, nrow(data$AalongLines_S))
+      print("Calculate contribution1")
+      
+      for (t in 1:data$nYear) {
+        idx <- which(
+          data$year == min(data$year) + t - 1
+        )
+        signal_ST[idx] <-
+          as.vector(
+            data$AalongLines_ST[[t]] %*%
+              vST_mat[, t]
+          )
+      }
+      
+      signal_total <- signal_S + signal_ST
+      print("Calculate contribution2")
+      
+      score <- tapply(
+        signal_total^2,
+        surveyData$transect_id,
+        sum#mean
+      )
+      score = sort(score, decreasing = TRUE)
+      
+      if(length(id_ridge_used)>0){
+        score = score[!(names(score) %in%id_ridge_used)]
+      }
+    
+      print(head(score,10))
+      
+      problemTransects = names(score)[1:nTransect_ridge]
+      id_ridge_used = c(id_ridge_used,problemTransects)
+      for(id in problemTransects){
+        if(!is.na(id)){
+          data$ridgeCorrectLine[which(surveyData$transect==id)] = 1
+          
+          rawObs = surveyData[surveyData$code==2,]
+          if(length(which(rawObs$transect==id))>0){
+            data$ridgeCorrectObservations[which(rawObs$transect==id)] = 1
+          }
+        }
+      }
+      print(paste0("Number of ridge.correct points: " , sum(data$ridgeCorrectLine)  ))
+      print("Transects with ridge.correct points:" )
+      print(id_ridge_used)
+      
+      runs[[i]] = fitMSLT(data,par,conf, map = map,ridge.correct = TRUE,getJointPrecision = TRUE, ridge_early_stop = ridge_early_stop)
+  
+      if(identical(runs[[i]], NA)){
+        print("Ridge-corrected fit failed, NA returned")
+        print(i)
+        return(runs[[i]])
+      }
+      
+      if((!is.null(runs[[i]]$opt)) && (runs[[i]]$opt$convergence==0)){
+        print(paste0("Converged in trial ",i,"."))
+        done = TRUE
+      }else{
+        runs[[i]]$obj = NULL
+        gc()
+        print("Did not converge")
+        print(i)
+        print(runs[[i]]$rep)
+      }
+      
+      if(i>n_trials){
+        print("Did not converge, stop search")
+        done = TRUE
+        
+      }
+    }, error = function(e){
+      
+      print("Someting faild, save object to reproduce the error.")
+      saveRDS(
+        list(
+          error = conditionMessage(e),
+          calls = sys.calls(),
+          i = i,
+          data = data,
+          par = par,
+          conf = conf,
+          
+          surveyData = surveyData,
+          sdrep = sdrep,
+          ii_S = ii_S,
+          ii_ST = ii_ST,
+          nMesh = nMesh,
+          
+          H = if(exists("H")) H else NULL,
+          ii_ST_H = if(exists("ii_ST_H")) ii_ST_H else NULL,
+          H_ST = if(exists("H_ST")) H_ST else NULL,
+          ev = if(exists("ev")) ev else NULL,
+          v = if(exists("v")) v else NULL,
+          signal_S = if(exists("signal_S")) signal_S else NULL,
+          signal_ST = if(exists("signal_ST")) signal_ST else NULL,
+          signal_total = if(exists("signal_total")) signal_total else NULL
+        ),
+        file = paste0("debug_trial_", i,"_", Sys.getpid(), ".rds")
+      )
+      
+      stop(e)
+    })
+  }
+  run_first = run
+  run = runs[[i]]
+  attributes(run)$run_first = run_first
+  attributes(run)$n_trials = i 
+  return(run)
+}
+
+

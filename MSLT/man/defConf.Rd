@@ -5,7 +5,8 @@
 \title{defConf}
 \usage{
 defConf(
-  matern_intensity = 1,
+  space_intensity_matern = 1,
+  spaceTime_intensity_maternAR1 = 1,
   mmpp = 1,
   detectionTrunc = -1,
   matern_size = 1,
@@ -29,11 +30,14 @@ defConf(
   cellsize = 50,
   UTMproj = sf::st_crs("+proj=utm +zone=22 +units=km"),
   LatLonProj = sf::st_crs("+proj=longlat +datum=WGS84"),
-  buffer = 0
+  buffer = 0,
+  matern_intensity = NULL
 )
 }
 \arguments{
-\item{matern_intensity}{1: include spatial effect in group abundance intensity, 0: not}
+\item{space_intensity_matern}{0: do not include spatial effect in group abundance intensity 1: include spatial effect}
+
+\item{spaceTime_intensity_maternAR1}{0: do not include space-time effect in group abundance intensity, 1: include space-time effect but no correlation across years 2: include space-time effect with correlation across years}
 
 \item{mmpp}{1: include MMPP in group abundance intensity, 0:not}
 
@@ -82,6 +86,8 @@ defConf(
 \item{LatLonProj}{CRS-latitude and longitude projection}
 
 \item{buffer}{A buffer (in km) outside of the area of interest. The buffer is used when constructing the boundary input to fmesher::fm_mesh_2d}
+
+\item{matern_intensity}{outdated configuration}
 }
 \value{
 Configurations

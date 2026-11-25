@@ -4,7 +4,7 @@
 \alias{mslt}
 \title{MSLT model}
 \usage{
-mslt(par)
+mslt(par, data)
 }
 \arguments{
 \item{par}{parameters in model}

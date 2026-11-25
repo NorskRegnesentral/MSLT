@@ -3,7 +3,7 @@
 #' @param par parameters in model 
 #' @return Liklihood of MSLT model given parameters
 #' @export
-mslt = function(par){
+mslt = function(par,data){
   
   if(exists("shared_env_simulations")){
     data = shared_env_simulations$data
@@ -16,8 +16,11 @@ mslt = function(par){
   }
   
   RTMB::getAll(par,data)
-  sigma = exp(log_sigma);
-  kappa = exp(log_kappa);
+  sigma_intensity = exp(log_sigma_intensity);
+  sigma_size = exp(log_sigma_size);
+  kappa_intensity = exp(log_kappa_intensity);
+  kappa_size = exp(log_kappa_size);
+  rho_intensity = -1 + 2 * (1 / (1 + exp(-logit_rho_intensity)))
   mu = exp(log_mu);
   c_mmpp = exp(log_c_mmpp)+1;
   bHazard = exp(logB); 
@@ -27,22 +30,52 @@ mslt = function(par){
   RTMB::TapeConfig(atomic="disable") #Makes %*% more computationally efficient
   
   #Precision matrix Q, e.g. Lindgren + Rue 2015 JSS p4:
-  Q_intensity = kappa[1]^4 * spdeMatrices$M0 + 2 * kappa[1]^2 * spdeMatrices$M1 + spdeMatrices$M2
+  Q_intensity_S = kappa_intensity[1]^4 * spdeMatrices$M0 + 2 * kappa_intensity[1]^2 * spdeMatrices$M1 + spdeMatrices$M2
+  Q_intensity_ST = kappa_intensity[2]^4 * spdeMatrices$M0 + 2 * kappa_intensity[2]^2 * spdeMatrices$M1 + spdeMatrices$M2
   
-  if(matern_intensity != 0){
-    nll = nll - RTMB::dgmrf(x_intensity,0,Q_intensity, TRUE);
+  if(space_intensity_matern != 0){
+    nll = nll - RTMB::dgmrf(x_intensity_S,0,Q_intensity_S, TRUE);
     if(usePCpriors==1){
       d = 2; #Part of spatial pc-prior
       R = -log(pcPriorsRange_intensity[2])*pcPriorsRange_intensity[1]^(d/2)
       S = -log(pcPriorsSD_intensity[2])/pcPriorsSD_intensity[1];
-      rhoP = sqrt(8)/kappa[1];
-      nll = nll- log( d/2 * R *S *rhoP^(-1-d/2)* exp(-R* rhoP^(-d/2) -S* sigma[1] )); #pc-prior contribution
+      rhoP = sqrt(8)/kappa_intensity[1];
+      nll = nll- log( d/2 * R *S *rhoP^(-1-d/2)* exp(-R* rhoP^(-d/2) -S* sigma_intensity[1] )); #pc-prior contribution
     }
   }
   
-  scaleS = 1 /((4*base::pi)*kappa[1]*kappa[1]); #needed for interpreting the sigma^2 parameter as marginal variance. See section 2.1 in Lindgren (2011)
-  x_intensity = x_intensity/sqrt(scaleS)*sigma[1];
-    
+  if(spaceTime_intensity_maternAR1 != 0){
+    ## GMRF prior spatio-temporal effect
+    f1 <- function(x) {
+      RTMB::dgmrf(x,
+            mu = 0,
+            Q = Q_intensity_ST,
+            log = TRUE)
+    }
+    f2 <- function(x) {
+      RTMB::dautoreg(x,
+               mu = 0,
+               phi = rho_intensity,
+               log = TRUE,
+               scale = 1 / sqrt(1 - rho_intensity^2))
+    }
+    nll <- nll - RTMB::dseparable(f1, f2)(x_intensity_ST)
+  
+    if(usePCpriors==1){
+      d = 2; #Part of spatial pc-prior
+      R = -log(pcPriorsRange_intensity[2])*pcPriorsRange_intensity[1]^(d/2)
+      S = -log(pcPriorsSD_intensity[2])/pcPriorsSD_intensity[1];
+      rhoP = sqrt(8)/kappa_intensity[2];
+      nll = nll- log( d/2 * R *S *rhoP^(-1-d/2)* exp(-R* rhoP^(-d/2) -S* sigma_intensity[2] )); #pc-prior contribution
+    }
+  }
+  
+  scaleS = 1 /((4*base::pi)*kappa_intensity[1]*kappa_intensity[1]); #needed for interpreting the sigma^2 parameter as marginal variance. See section 2.1 in Lindgren (2011)
+  scaleST = 1 /((4*base::pi)*kappa_intensity[2]*kappa_intensity[2]); #needed for interpreting the sigma^2 parameter as marginal variance. See section 2.1 in Lindgren (2011)
+  x_intensity_S = x_intensity_S/sqrt(scaleS)*sigma_intensity[1];
+  x_intensity_ST = x_intensity_ST/sqrt(scaleST)*sigma_intensity[2];
+
+  
   #----- Classical line transect likelihood----------
   nObs = length(distObs)
   for(i in 1:nObs){
@@ -64,11 +97,19 @@ mslt = function(par){
     }
   }
   
+
   #------ Log Gaussian Cox process ----------
   #Structure needed for effort constribution
-  Z_transect =  X_z*beta_z+  AalongLines%*%x_intensity;
-  Z_transect_endpoints =  X_z*beta_z+  AalongLinesEndpoints%*%x_intensity; 
-  
+  Z_transect =  X_z%*%beta_z+  AalongLines_S%*%x_intensity_S; 
+  Z_transect_endpoints = X_z%*%beta_z+ AalongLinesEndpoints_S%*%x_intensity_S; 
+  if(spaceTime_intensity_maternAR1 != 0){
+    for(t in 1:nYear){
+      indeks = which(year== min(year) + t-1)
+      Z_transect[indeks] =  Z_transect[indeks] +  AalongLines_ST[[t]]%*%x_intensity_ST[,t]; 
+      Z_transect_endpoints[indeks] =  Z_transect_endpoints[indeks] +  AalongLinesEndpoints_ST[[t]]%*%x_intensity_ST[,t]; 
+    }
+  }
+
   # Transect codes:
   # 0: start transect leg
   # 1: node used for numerical integration (including change g(y) or end transect)
@@ -117,7 +158,11 @@ mslt = function(par){
         P = P%*%expm_mmpp2(lambda,mu,lineIntegralDelta[i]);
         P[1,1] = P[1,1]* lambda_endpoints[1];
         P[1,2] = P[1,2]* lambda_endpoints[2];
-        nll = nll +log(esw);  # This is the normalizing constant that was skipped above in the detection function
+        if(ridgeCorrectLine[i]==1){
+          nll = nll -Term( -log(esw));  # This is the normalizing constant that was skipped above in the detection function
+        }else{
+          nll = nll +log(esw);  # This is the normalizing constant that was skipped above in the detection function
+        }
       }
       if(code[i]!=0){
         if(ridgeCorrectLine[i]==1){
@@ -138,8 +183,6 @@ mslt = function(par){
     }
   }
   
-
-  
   pi_1 = mu[2]/sum(mu);
   pi_2 = mu[1]/sum(mu);
   k_psi = pi_1 + c_mmpp*pi_2;
@@ -150,18 +193,29 @@ mslt = function(par){
   }
   
   #Abundance
-  linPred =   exp(X_z_pred*beta_z + Apred%*%x_intensity) * k_psi;
+  if(spaceTime_intensity_maternAR1==0){
+    linPred =   exp(X_z_pred%*%beta_z + Apred%*%x_intensity_S) * k_psi;
+  }else{
+    linPred = RTMB::AD(matrix(NA,nrow = nYear,ncol = dim(Apred)[1]))
+    for(t in 1:nYear){
+      linPred[t,] =    RTMB::AD(as.vector(exp(X_z_pred%*%beta_z + Apred%*%x_intensity_S +  Apred%*%x_intensity_ST[,t]))) * k_psi;
+    }
+  }
+
+  
+  
   
   #Size part
   if(applyPodSize==1){
+    #NB: spatio-temporal structure not included for group size
     if(matern_size != 0){
-      Q_size = kappa[2]^4 * spdeMatrices$M0 + 2 * kappa[2]^2 * spdeMatrices$M1 + spdeMatrices$M2
-      nll = nll - RTMB::dgmrf(x_size,0,Q_size,TRUE);
-      scaleS_size = 1/(4*base::pi*kappa[2]*kappa[2]); #Needed for interpreting the sigma^2 parameter as marginal variance. See section 2.1 in Lindgren (2011)
-      x_size = x_size/sqrt(scaleS_size) *sigma[2];
+      Q_size_S = kappa_size[1]^4 * spdeMatrices$M0 + 2 * kappa_size[1]^2 * spdeMatrices$M1 + spdeMatrices$M2
+      nll = nll - RTMB::dgmrf(x_size,0,Q_size_S,TRUE);
+      scaleS_size = 1/(4*base::pi*kappa_size[1]*kappa_size[1]); #Needed for interpreting the sigma^2 parameter as marginal variance. See section 2.1 in Lindgren (2011)
+      x_size = x_size/sqrt(scaleS_size) *sigma_size[1];
     }
     
-    linPredSize =  exp(beta_size[1] + AObs%*%x_size);
+    linPredSize =  exp(beta_size[1] + AObs_S%*%x_size);
     linPredSizePredicion =   exp(beta_size[1] + Apred%*%x_size);
 
     for(i in 1:nObs){
@@ -185,16 +239,45 @@ mslt = function(par){
       }
     }
   }
-  
-  abundance = sum(areas*linPred);
-  logAbundance = log(abundance);
-  RTMB::ADREPORT(logAbundance);
-  
+  if(spaceTime_intensity_maternAR1==0){
+    abundance = sum(areas*linPred);
+    logAbundance = log(abundance);
+    RTMB::ADREPORT(logAbundance);
+    
+    panel_names = unique(cell_integration$panel)
+    abundance_panels = RTMB::AD(rep(0,length(panel_names)))
+    for(i in 1:dim(cell_integration)[1]){
+      abundance_panels[which(panel_names==cell_integration$panel[i])] = abundance_panels[which(panel_names==cell_integration$panel[i])] +
+        as.numeric(cell_integration$panel_area)[i]*as.vector(linPred)[cell_integration$cell_id[i]]
+    }
+    logAbundance_panels = log(abundance_panels)
+    RTMB::ADREPORT(logAbundance_panels);
+    RTMB::REPORT(panel_names)
+  }else{
+    abundance_vector = RTMB::AD(rep(0,nYear))
+    for(t in 1:nYear){
+      abundance_vector[t] = sum(areas*linPred[t,]);
+    }
+    logAbundance_vector = log(abundance_vector);
+    RTMB::ADREPORT(logAbundance_vector);
+    
+    panel_names = unique(cell_integration$panel)
+    abundance_panels_matrix = RTMB::AD(matrix(0,nrow = nYear,ncol = length(panel_names)))
+    for(t in 1:nYear){
+      for(i in 1:dim(cell_integration)[1]){
+        abundance_panels_matrix[t,which(panel_names==cell_integration$panel[i])] = abundance_panels_matrix[t,which(panel_names==cell_integration$panel[i])] +
+          as.numeric(cell_integration$panel_area)[i]*as.vector(linPred[t,])[cell_integration$cell_id[i]]
+      }
+    }
+    logAbundance_panels_matrix = log(abundance_panels_matrix)
+    RTMB::ADREPORT(logAbundance_panels_matrix);
+    RTMB::REPORT(panel_names)
+  }
   log_range_psi = log(-log(0.1)/sum(mu));
   RTMB::ADREPORT(log_range_psi);
   
   if(spatialBiasCorFigure==1){ #Needed when producing spatial bias corrected plots in paper, removed by defauls because requires a couple of minutes computation time
-    linPredFigure =   exp(beta_z[1] + x_intensity) * k_psi;
+    linPredFigure =   exp(beta_z[1] + x_intensity_S) * k_psi;
     linPredFigureSize =  exp(beta_size[1] + x_size);
     for(i in 1:length(linPredFigure)){
       sizeNB = exp(logSizeNB[1]);

@@ -5,38 +5,114 @@
 #' @param conf model configurations list  returned by \code{\link{defConf}}
 #' @param map map object used by TMB to couple and remove parameters
 #' @param ridge.correct Activates ridge.correct in MakeADFun
+#' @param ridge_early_stop Activates early stop if gradiend suddenly increases above max_mgc after have been below best_mgc_limit.
 #' @param ... additional parameters passed to sdreport 
 #' @return fitted model
 #' @export
-fitMSLT = function(data,par,conf,rel.tol=1e-10,map = setMap(conf, par),ridge.correct = FALSE,...){
+fitMSLT = function(data,par,conf,rel.tol=1e-10,map = setMap(conf, par),ridge.correct = FALSE,
+                   ridge_early_stop = list(activated = FALSE,max_mgc = 10000,best_mgc_limit=100) ,...){
 
   #Estimating the model and extract results-------------
   startTime <- Sys.time()
   Term = RTMB:::Term
-  if(conf$mmpp==1){
-      obj <- RTMB::MakeADFun(mslt, par, random=c("x_intensity","x_size"), profile = c("log_c_mmpp"), map = map,ridge.correct = ridge.correct)	
+  cmb <- function(f, data) function(p) f(p, data)
+  if(("log_c_mmpp" %in% names(map) && is.na(map$log_c_mmpp))){
+    obj <- RTMB::MakeADFun(cmb(mslt,data), par, random=c("x_intensity_S","x_intensity_ST","x_size"), map = map)	
+  }else if(conf$mmpp==1 ){#& ("log_c_mmpp" %in% names(map) && !is.na(map$log_c_mmpp))){
+    obj <- RTMB::MakeADFun(cmb(mslt,data), par, random=c("x_intensity_S","x_intensity_ST","x_size"), profile = c("log_c_mmpp"), map = map,ridge.correct = ridge.correct)	
   }else{
-    obj <- RTMB::MakeADFun(mslt, par, random=c("x_intensity","x_size"), map = map)	
+    obj <- RTMB::MakeADFun(cmb(mslt,data), par, random=c("x_intensity_S","x_intensity_ST","x_size"), map = map)	
   }
   lower = list()
   lower$log_c_mmpp = -10#NB, set lower boundary on jump in MMPP
+  
+  
+  
+  
+  
+  if(ridge_early_stop$activated){
+    best_mgc = Inf
+      fn_guard <- local({
+        function(par) {
+          objective <- obj$fn(par)
+          mgc <- max(abs(obj$gr(par)))
+          if (!is.na(mgc)) {
+            best_mgc <<- min(best_mgc, mgc)
+            if (best_mgc < ridge_early_stop$best_mgc_limit && mgc > ridge_early_stop$max_mgc) {
+              stop(
+                structure(
+                  list(
+                    message = sprintf(
+                      "Aborting: mgc = %.2e (best seen %.2e)",
+                      mgc, best_mgc
+                    )
+                  ),
+                  class = c("mgc_abort", "error", "condition")
+                )
+              )
+            }
+          }
+          
+          objective
+        }
+      })
 
-  fit = tryCatch({
-    opt <- nlminb(obj$par, obj$fn, obj$gr,control = list(rel.tol = rel.tol,trace = 1,iter.max = 1000,eval.max = 2000),lower = lower)
-    rep = RTMB::sdreport(obj, ...)
-    pl = as.list(rep,"Est")
-    plSd = as.list(rep,"Std")
-    rl = as.list(rep, what = "Est", report = TRUE)
-    rlSd = as.list(rep, what = "Std", report = TRUE)
-    list(obj = obj, opt = opt,rep = rep, map = map, conf = conf, data = data,pl = pl, plSd = plSd, rl = rl, rlSd = rlSd)},
-  error=function(cond) {
-    print("NB!!! Optization failed!")
-    NA
-  })
+    fit = tryCatch({
+      opt = NULL
+      opt <- nlminb(obj$par, fn_guard, obj$gr,control = list(rel.tol = rel.tol,trace = 1,iter.max = 1000,eval.max = 2000),lower = lower)
+      
+      rep = RTMB::sdreport(obj, ...)
+      pl = as.list(rep,"Est")
+      plSd = as.list(rep,"Std")
+      rl = as.list(rep, what = "Est", report = TRUE)
+      rlSd = as.list(rep, what = "Std", report = TRUE)
+      list(obj = obj, opt = opt,rep = rep, map = map, conf = conf, data = data,pl = pl, plSd = plSd, rl = rl, rlSd = rlSd)},
+      error=function(cond) {
+        
+        if (grepl("^Aborting: mgc", cond$message)) {
+          rep = RTMB::sdreport(obj,getJointPrecision = TRUE,skip.delta.method = TRUE)
+          pl = as.list(rep,"Est")
+          plSd = as.list(rep,"Std")
+          rl = as.list(rep, what = "Est", report = TRUE)
+          rlSd = as.list(rep, what = "Std", report = TRUE)
+          return(list(obj = obj, opt = NULL,rep = rep, map = map, conf = conf, data = data,pl = pl, plSd = plSd, rl = rl, rlSd = rlSd))
+        }
+        
+        print("NB!!! Optization failed!")
+        NA
+      })
+  }else{
+    fit = tryCatch({
+      opt <- nlminb(obj$par, obj$fn, obj$gr,control = list(rel.tol = rel.tol,trace = 1,iter.max = 1000,eval.max = 2000),lower = lower)
+      rep = RTMB::sdreport(obj, ...)
+      pl = as.list(rep,"Est")
+      plSd = as.list(rep,"Std")
+      rl = as.list(rep, what = "Est", report = TRUE)
+      rlSd = as.list(rep, what = "Std", report = TRUE)
+      list(obj = obj, opt = opt,rep = rep, map = map, conf = conf, data = data,pl = pl, plSd = plSd, rl = rl, rlSd = rlSd)},
+      error=function(cond) {
+        print("NB!!! Optization failed!")
+        NA
+      })
+  }
 
   endTime = Sys.time()
   timeUsed = endTime - startTime
   print(timeUsed)
+
+  if(length(fit)==1){
+    return(NA)
+  }
+  if(conf$spaceTime_intensity_maternAR1!=0 ){#& fit$opt$convergence==0 ){
+   panel_names = fit$obj$report()$panel_names
+   colnames(fit$rl$logAbundance_panels_matrix) = panel_names
+   rownames(fit$rl$logAbundance_panels_matrix) = min(fit$data$year):max(fit$data$year)
+   names(fit$rl$logAbundance_vector)= min(fit$data$year):max(fit$data$year)
+   colnames(fit$rlSd$logAbundance_panels_matrix) = panel_names
+   rownames(fit$rlSd$logAbundance_panels_matrix) = min(fit$data$year):max(fit$data$year)
+   names(fit$rlSd$logAbundance_vector)= min(fit$data$year):max(fit$data$year)
+  }
+  
 
   class(fit) = "mslt"
   return(fit)
@@ -58,9 +134,18 @@ jit = function(run, sd = 0.2, nojit = 50,ncores = 2){
   parv <- unlist(par)
   parsTmp <- lapply(1:nojit, function(i)relist(parv+rnorm(length(parv),sd=sd), par))
   pars =  lapply(parsTmp, function(p){
-    scale =1/((4*3.14159265)*exp(p$log_kappa)*exp(p$log_kappa))
-    p$x_intensity = p$x_intensity*sqrt(scale[1])
-    p$x_size = p$x_size*sqrt(scale[2])
+    scale_intensity =1/((4*pi)*exp(p$log_kappa_intensity)*exp(p$log_kappa_intensity))
+    p$x_intensity_S = p$x_intensity_S*sqrt(scale_intensity[1])
+    p$x_intensity_ST = p$x_intensity_ST*sqrt(scale_intensity[2])
+    if(run$conf$space_intensity_matern==0){
+      p$x_intensity_S = p$x_intensity_S*0
+    }
+    if(run$conf$spaceTime_intensity_maternAR1==0){
+      p$x_intensity_ST = p$x_intensity_ST*0
+    }
+    if(run$conf$spaceTime_intensity_maternAR1 !=2){
+      p$logit_rho_intensity = 0
+    }
     p
   })
 

@@ -11,6 +11,7 @@ fitMSLT(
   rel.tol = 1e-10,
   map = setMap(conf, par),
   ridge.correct = FALSE,
+  ridge_early_stop = list(activated = FALSE, max_mgc = 10000, best_mgc_limit = 100),
   ...
 )
 }
@@ -24,6 +25,8 @@ fitMSLT(
 \item{map}{map object used by TMB to couple and remove parameters}
 
 \item{ridge.correct}{Activates ridge.correct in MakeADFun}
+
+\item{ridge_early_stop}{Activates early stop if gradiend suddenly increases above max_mgc after have been below best_mgc_limit.}
 
 \item{...}{additional parameters passed to sdreport}
 }

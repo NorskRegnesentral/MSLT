@@ -1,12 +1,26 @@
 #' setData
 #' @description Define data used internally based on data porvided and configuration file
 #' @param d Data provided by user
-#' @param predAreaUTM prediction area provided by user
+#' @param panels_ll prediction area provided by user. A polygon with possible several sub-polygons in standard lat-lon coordinates
 #' @param conf model configurations list  returned by \code{\link{defConf}}
 #' @param digits Number of digits in line transect integration points and in prediction area. Sometimes needed because different OS may result in slightly different mesh because of numerical issues with small numbers.
+#' @param ratePredCovariates Optional function taking the prediction points (a data frame with \code{utmx} and \code{utmy}) and returning a data frame of additional rate covariates, one row per point in the same order. Set \code{conf$covRate} to the names of the rate covariates; omit it or use an empty string for an intercept-only model.
 #' @return data list used by TMB
 #' @export
-setData = function(d,predAreaUTM, conf, digits =6){
+setData = function(d,panels_ll, conf, digits =6, ratePredCovariates = NULL){
+
+  panels_utm <- sf::st_transform(
+    panels_ll,
+    conf$UTMproj
+  )
+  
+  #Different OS sometimes result in slightly different SPDE mesh because of rounding issue##
+  geom <- sf::st_geometry(panels_utm)
+  for(i in seq_along(geom)) {
+    geom[[i]][[1]] <- round(geom[[i]][[1]], digits)
+  }
+  sf::st_geometry(panels_utm) <- geom
+  ###
 
   if(conf$detectionTrunc>0){
     ii = which(d$perpDist>conf$detectionTrunc & d$code==2)
@@ -24,8 +38,8 @@ setData = function(d,predAreaUTM, conf, digits =6){
   #Different OS sometimes result in slightly different mesh because of rounding issues
   obsUTM = round(obsUTM,digits) 
   
-  d$utmy = obsUTM[,2]
   d$utmx = obsUTM[,1]
+  d$utmy = obsUTM[,2]
   
   #Define mid-points as coordinates for integration points
   integrationPointsUTM = as.matrix(d[,c("utmx","utmy")])
@@ -36,22 +50,45 @@ setData = function(d,predAreaUTM, conf, digits =6){
     }
   }
 
-  #Accomondate for observer sides
+  #Accommodate for observer sides
   d$abortLeft = rep(0,dim(d)[1])
   d$abortRight = rep(0,dim(d)[1])
   d$abortLeft[is.na(d$Port)] =1
   d$abortRight[is.na(d$Stbd)] =1
 
-  #Define aundance integration points
-  grid <- sf::st_make_grid(predAreaUTM, cellsize = conf$cellsize)
-  grid_sf <- sf::st_as_sf(grid)
-  discretized_areas <- sf::st_intersection(grid_sf, predAreaUTM)#Intersection to find overlapping areas
-  discretized_areas$area <- sf::st_area(discretized_areas)
-  points=sf::st_centroid(sf::st_geometry(discretized_areas))
+  #Define abundance integration points
+  predAreaUTM = sf::st_union(panels_utm)
   
+  grid = sf::st_make_grid(predAreaUTM, cellsize = conf$cellsize)
+  grid_sf = sf::st_as_sf(grid)
+  discretized_areas = sf::st_intersection(grid_sf, predAreaUTM)# Clip grid to predAreaUTM
+  discretized_areas$area_total = sf::st_area(discretized_areas)# Area represented by each integration point
+  discretized_areas$cell_id = seq_len(nrow(discretized_areas))
+  
+  points=sf::st_centroid(sf::st_geometry(discretized_areas))
   predData = data.frame(sf::st_coordinates(points))
-  names(predData) = c("utmx", "utmy")
+  names(predData) <- c("utmx", "utmy")
 
+  # Add rate prediction covariates if provided
+  if(!is.null(ratePredCovariates)){
+    predData <- ratePredCovariates(predData)
+    d = ratePredCovariates(d)
+  }
+
+  # Divide area into panels for panel-specific abundance estimates
+  cell_panel <- sf::st_intersection(
+    discretized_areas,
+    panels_utm
+  )
+  cell_panel$panel_area = sf::st_area(cell_panel)
+  if(is.null(cell_panel[["panel", exact = TRUE]])){
+    cell_panel$panel = rep("A", dim(cell_panel)[1])
+  }
+  
+  cell_integration <- sf::st_drop_geometry(
+    cell_panel[c("cell_id", "panel","panel_area")]
+  )
+  
   buffer = sf::st_buffer(predAreaUTM,conf$buffer)
   mesh <- fmesher::fm_mesh_2d(obsUTM,
                               max.edge =conf$spdeDetails$max.edge,
@@ -62,45 +99,87 @@ setData = function(d,predAreaUTM, conf, digits =6){
   
   
   #Set up regression coefficients for detection 
+  d$dummy_designmatrix = 1
   if(conf$covDetection[1] =="" & length(conf$covDetection)==1) {
-    f_det <- lon ~ 1
+    f_det <- dummy_designmatrix ~ 1
   }else {
     # Check that all requested covariates exist in the data
     missing_covs <- setdiff(conf$covDetection, names(d))
     if(length(missing_covs) > 0){
-      stop(
-        "The following detection covariates are not in the data: ",
-        paste(missing_covs, collapse = ", ")
-      )
+      stop("The following detection covariates are not in the data: ",paste(missing_covs, collapse = ", "))
     }
-    
+
     # Build formula: no intercept + covariates
     f_det <- as.formula(
-      paste("lon ~ -1 +", paste(conf$covDetection, collapse = " + "))
+      paste("lon ~ 1 + ", paste(conf$covDetection, collapse = " + "))
     )
   }
   X_g_obs = mgcv::gam(f_det  , data = d[which(d$code==2),],fit =FALSE)$X
   X_g_left = mgcv::gam(f_det , data = d,fit =FALSE,)$X
   X_g_right = X_g_left
 
-  
   #Set up regression coefficients for rate
-  X_z = mgcv::gam(lon ~  1  , data = d,fit =FALSE)$X
-  X_z_pred = mgcv::gam(utmx ~  1 , data = predData,fit =FALSE)$X
+  predData$dummy_designmatrix = 1
+  if(length(conf$covRate) == 0L || identical(conf$covRate, "")){
+     f_rate <- dummy_designmatrix ~ 1
+  }else{
+    # Check that all requested covariates exist in the data
+    missing_covs <- setdiff(conf$covRate, names(d))
+    missing_covs_pred <- setdiff(conf$covRate, names(predData))
+    if(length(missing_covs) > 0){
+      stop("The following rate covariates are not in the data: ",paste(missing_covs, collapse = ", "))
+    }
+    if(length(missing_covs_pred) > 0){
+      stop("The following rate covariates are not in the prediction data: ",paste(missing_covs_pred, collapse = ", "))
+    }
+    # Build formula: no intercept + covariates
+    f_rate <- as.formula(
+      paste("dummy_designmatrix ~ 1 +", paste(conf$covRate, collapse = " + "))
+    )
+  }
+  X_z_all = mgcv::gam(f_rate  ,    
+    data = rbind(d[names(d)%in% names(predData)],predData),
+    fit =FALSE)$X
+  X_z      <- X_z_all[1:nrow(d), , drop = FALSE]
+  X_z_pred <- X_z_all[-(1:nrow(d)), , drop = FALSE]
+
 
   #matrices needed in the SPDE procedure
-  AalongLines <- fmesher::fm_basis(mesh,integrationPointsUTM)
-  AalongLinesEndpoints <- fmesher::fm_basis(mesh,endpoints)
+  AalongLines_S <- fmesher::fm_basis(mesh,integrationPointsUTM)
+  AalongLinesEndpoints_S <- fmesher::fm_basis(mesh,endpoints)
+  AObs_S <- fmesher::fm_basis(mesh,obsUTM[d$code==2,])
   Apred <- fmesher::fm_basis(mesh,as.matrix(predData[,1:2]))
-  AObs <- fmesher::fm_basis(mesh,obsUTM[d$code==2,])
   
   spde <- fmesher::fm_fem(mesh)
   spdeMatrices = list(M0 = spde$c0, M1 = spde$g1,M2 = spde$g2)
+  
+  
+  #Space-time A-matrices
+  AObs_ST = list()
+  AalongLines_ST = list()
+  AalongLinesEndpoints_ST = list()
+  if(conf$spaceTime_intensity_maternAR1){
+    nYear = diff(range(d$year)) + 1
+    for(t in 1:nYear){
+      AObs_ST[[t]] = fmesher::fm_basis(mesh,obsUTM[d$code==2 & d$year == min(d$year) + t-1,])
+      AalongLines_ST[[t]] <- fmesher::fm_basis(mesh,integrationPointsUTM[d$year == min(d$year) + t-1,])
+      AalongLinesEndpoints_ST[[t]] <- fmesher::fm_basis(mesh,endpoints[d$year == min(d$year) + t-1,])
+    }
+  }else{
+    nYear = 1
+  }
 
-  data = list(AalongLines = AalongLines,
-              AalongLinesEndpoints = AalongLinesEndpoints,
+  
+
+  data = list(AalongLines_S = AalongLines_S,
+              AalongLinesEndpoints_S = AalongLinesEndpoints_S,
+              AalongLines_ST = AalongLines_ST,
+              AalongLinesEndpoints_ST = AalongLinesEndpoints_ST,
+              AObs_S = AObs_S,
+              AObs_ST = AObs_ST,
               Apred = Apred,
-              AObs = AObs,
+              year = d$year,
+              nYear = nYear,
               spdeMatrices = spdeMatrices,
               lineIntegralDelta = d$dist,
               code = d$code,
@@ -113,9 +192,11 @@ setData = function(d,predAreaUTM, conf, digits =6){
               g_function = conf$g_function, #Which detection function to use
               penalize = conf$penalizeMMPP,
               areas = as.numeric(discretized_areas$area),
+              cell_integration = cell_integration,
               abortLeft = d$abortLeft,
               abortRight = d$abortRight,
-              matern_intensity = conf$matern_intensity,
+              space_intensity_matern = conf$space_intensity_matern,
+              spaceTime_intensity_maternAR1  = conf$spaceTime_intensity_maternAR1,
               matern_size = conf$matern_size,
               pcPriorsRange_intensity = conf$pcPriorsRange_intensity,
               pcPriorsSD_intensity = conf$pcPriorsSD_intensity,
@@ -133,20 +214,22 @@ setData = function(d,predAreaUTM, conf, digits =6){
   )
 
   #Needed for ridge correct only parts of data
-  data$ridgeCorrectLine = rep(0,dim(data$AalongLines)[1])
-  data$ridgeCorrectObservations = rep(0,dim(data$AObs)[1])
+  data$ridgeCorrectLine = rep(0,dim(data$AalongLines_S)[1])
+  data$ridgeCorrectObservations = rep(0,dim(data$AObs_S)[1])
   
   #Add attributes that is not needed in the TMB program, but neat to have
   obsLatLon = data.frame(sf::st_coordinates(obsLatLon))
   colnames(obsLatLon) = c("lon","lat")
   obsUTM = data.frame(obsUTM)
-  colnames(obsUTM) = c("lon","lat")
+  colnames(obsUTM) = c("UTMX","UTMY")
   
   attributes(data)$mesh = mesh
   attributes(data)$obsUTM = obsUTM
   attributes(data)$obsLatLon = obsLatLon
   attributes(data)$predData = predData
   attributes(data)$detectionCov = colnames(X_g_right)
+  attributes(data)$surveyData = d
+  attributes(data)$panels_utm = panels_utm
   return(data)
 }
 

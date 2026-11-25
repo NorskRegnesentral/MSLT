@@ -98,11 +98,11 @@ Read the line transect data and the survey area. The data is stored in folder `p
 
 ```R
 setwd(tempdir())
-files = c("lineTransectData.rds", "surveyArea.rds")
+files = c("lineTransectData.rds", "surveyArea_ll.rds")
 url <- "https://raw.githubusercontent.com/NorskRegnesentral/MSLT/main/papers/JASA2025/data/"
 d <- lapply(files, function(f)download.file(paste(url,f,sep=""), f))
 surveyData <- readRDS("lineTransectData.rds")
-predAreaUTM <- readRDS("surveyArea.rds")
+predArea_ll <- readRDS("surveyArea_ll.rds")
 ```
 
 Set configurations for the model:
@@ -112,7 +112,8 @@ conf = defConf(detectionTrunc = 3.5, #Truncation limit 3.5 km in our case, see E
                cutoff = 8, #Maximum distance between SPDE mesh nodes along transects, see Section 2.2 and S3.1.
                max.edge = c(20,80), #Maximum distance between SPDE mesh nodes in survey area and outer area, see Section 2.2  and S3.1.
                cellsize = 50, #Distance between spatial integration points, see Eq (19)
-               matern_intensity = 1, #Activate SPDE, see Eq (2)
+               space_intensity_matern = 1, #Activate SPDE, see Eq (2)
+               spaceTime_intensity_maternAR1 = 0, #No spatio-temporal structure
                mmpp = 1, #Activate MMPP , see Eq (2)
                applyPodSize = 1, #Activate group size model, see section 2.4.
                covDetection = "vessel" #Use vessel as a covariate in Eq. (2)
@@ -121,7 +122,7 @@ conf = defConf(detectionTrunc = 3.5, #Truncation limit 3.5 km in our case, see E
 
 Set up the data and the parameters: 
 ```r
-data = setData(surveyData,predAreaUTM,conf)
+data = setData(surveyData,predArea_ll,conf)
 par = setPar(data,conf)
 ```
 
@@ -146,11 +147,7 @@ We can inspect the derived model parameters reported in Table 2 by calling `part
 Bias correction can be performed like this:
 
 ```r
-index = list(run$obj$env$ADreportIndex()$logAbundance) #Only do bias-correction for estimated abundance
-sdrep <- TMB::sdreport(run$obj,
-                               bias.correct = TRUE,
-                               bias.correct.control = list(split = index,sd = TRUE),
-                               getReportCovariance = FALSE)
+bc = pred_biascorrect(run,nSplit = 1,sd = TRUE)
 ```
 
 
@@ -158,18 +155,18 @@ sdrep <- TMB::sdreport(run$obj,
 We can inspect the bias-corrected abundance estimate reported in Table 2 in https://doi.org/10.1080/01621459.2025.2566422:
 
 ```r
-partable_derived(run,sdrep)
+partable_derived(run, bc$sdrep_biascorrect)
 ```
 
 
 ## Estimate simpler submodels
-The different submodels can be estimated by modifying the `conf` object accordingly: 
+The different submodels can be estimated by modifying the `conf` object accordingly (similarly for space-time): 
 
-SPDE: To estimate the SPDE-only model, set `conf$mmpp = 0` and `conf$matern_intensity = 1`. 
+SPDE: To estimate the SPDE-only model, set `conf$mmpp = 0` and `conf$space_intensity_matern = 1`. 
 
-MMPP: To estimate the MMPP-only model, set `conf$mmpp = 1` and `conf$matern_intensity = 0`.
+MMPP: To estimate the MMPP-only model, set `conf$mmpp = 1` and `conf$space_intensity_matern = 0`.
 
-HPP: To estimate the HPP model, set both `conf$mmpp = 0` and `conf$matern_intensity = 0`.
+HPP: To estimate the HPP model, set both `conf$mmpp = 0` and `conf$space_intensity_matern = 0`.
 
 Only number of groups: To estimate only the number of groups, set `conf$applyPodSize = 0`.
 
