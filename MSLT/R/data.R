@@ -4,9 +4,10 @@
 #' @param panels_ll prediction area provided by user. A polygon with possible several sub-polygons in standard lat-lon coordinates
 #' @param conf model configurations list  returned by \code{\link{defConf}}
 #' @param digits Number of digits in line transect integration points and in prediction area. Sometimes needed because different OS may result in slightly different mesh because of numerical issues with small numbers.
+#' @param ratePredCovariates Optional function taking the prediction points (a data frame with \code{utmx} and \code{utmy}) and returning a data frame of additional rate covariates, one row per point in the same order. Set \code{conf$covRate} to the names of the rate covariates; omit it or use an empty string for an intercept-only model.
 #' @return data list used by TMB
 #' @export
-setData = function(d,panels_ll, conf, digits =6){
+setData = function(d,panels_ll, conf, digits =6, ratePredCovariates = NULL){
 
   panels_utm <- sf::st_transform(
     panels_ll,
@@ -68,6 +69,12 @@ setData = function(d,panels_ll, conf, digits =6){
   predData = data.frame(sf::st_coordinates(points))
   names(predData) <- c("utmx", "utmy")
 
+  # Add rate prediction covariates if provided
+  if(!is.null(ratePredCovariates)){
+    predData <- ratePredCovariates(predData)
+    d = ratePredCovariates(d)
+  }
+
   # Divide area into panels for panel-specific abundance estimates
   cell_panel <- sf::st_intersection(
     discretized_areas,
@@ -92,31 +99,50 @@ setData = function(d,panels_ll, conf, digits =6){
   
   
   #Set up regression coefficients for detection 
+  d$dummy_designmatrix = 1
   if(conf$covDetection[1] =="" & length(conf$covDetection)==1) {
-    f_det <- lon ~ 1
+    f_det <- dummy_designmatrix ~ 1
   }else {
     # Check that all requested covariates exist in the data
     missing_covs <- setdiff(conf$covDetection, names(d))
     if(length(missing_covs) > 0){
-      stop(
-        "The following detection covariates are not in the data: ",
-        paste(missing_covs, collapse = ", ")
-      )
+      stop("The following detection covariates are not in the data: ",paste(missing_covs, collapse = ", "))
     }
-    
+
     # Build formula: no intercept + covariates
     f_det <- as.formula(
-      paste("lon ~ -1 +", paste(conf$covDetection, collapse = " + "))
+      paste("lon ~ 1 + ", paste(conf$covDetection, collapse = " + "))
     )
   }
   X_g_obs = mgcv::gam(f_det  , data = d[which(d$code==2),],fit =FALSE)$X
   X_g_left = mgcv::gam(f_det , data = d,fit =FALSE,)$X
   X_g_right = X_g_left
 
-  
   #Set up regression coefficients for rate
-  X_z = mgcv::gam(lon ~  1  , data = d,fit =FALSE)$X
-  X_z_pred = mgcv::gam(utmx ~  1 , data = predData,fit =FALSE)$X
+  predData$dummy_designmatrix = 1
+  if(length(conf$covRate) == 0L || identical(conf$covRate, "")){
+     f_rate <- dummy_designmatrix ~ 1
+  }else{
+    # Check that all requested covariates exist in the data
+    missing_covs <- setdiff(conf$covRate, names(d))
+    missing_covs_pred <- setdiff(conf$covRate, names(predData))
+    if(length(missing_covs) > 0){
+      stop("The following rate covariates are not in the data: ",paste(missing_covs, collapse = ", "))
+    }
+    if(length(missing_covs_pred) > 0){
+      stop("The following rate covariates are not in the prediction data: ",paste(missing_covs_pred, collapse = ", "))
+    }
+    # Build formula: no intercept + covariates
+    f_rate <- as.formula(
+      paste("dummy_designmatrix ~ 1 +", paste(conf$covRate, collapse = " + "))
+    )
+  }
+  X_z_all = mgcv::gam(f_rate  ,    
+    data = rbind(d[names(d)%in% names(predData)],predData),
+    fit =FALSE)$X
+  X_z      <- X_z_all[1:nrow(d), , drop = FALSE]
+  X_z_pred <- X_z_all[-(1:nrow(d)), , drop = FALSE]
+
 
   #matrices needed in the SPDE procedure
   AalongLines_S <- fmesher::fm_basis(mesh,integrationPointsUTM)

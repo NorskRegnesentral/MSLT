@@ -100,8 +100,8 @@ mslt = function(par,data){
 
   #------ Log Gaussian Cox process ----------
   #Structure needed for effort constribution
-  Z_transect =  X_z*beta_z+  AalongLines_S%*%x_intensity_S; 
-  Z_transect_endpoints = X_z*beta_z+ AalongLinesEndpoints_S%*%x_intensity_S; 
+  Z_transect =  X_z%*%beta_z+  AalongLines_S%*%x_intensity_S; 
+  Z_transect_endpoints = X_z%*%beta_z+ AalongLinesEndpoints_S%*%x_intensity_S; 
   if(spaceTime_intensity_maternAR1 != 0){
     for(t in 1:nYear){
       indeks = which(year== min(year) + t-1)
@@ -194,11 +194,11 @@ mslt = function(par,data){
   
   #Abundance
   if(spaceTime_intensity_maternAR1==0){
-    linPred =   exp(X_z_pred*beta_z + Apred%*%x_intensity_S) * k_psi;
+    linPred =   exp(X_z_pred%*%beta_z + Apred%*%x_intensity_S) * k_psi;
   }else{
     linPred = RTMB::AD(matrix(NA,nrow = nYear,ncol = dim(Apred)[1]))
     for(t in 1:nYear){
-      linPred[t,] =    RTMB::AD(as.vector(exp(X_z_pred*beta_z + Apred%*%x_intensity_S +  Apred%*%x_intensity_ST[,t]))) * k_psi;
+      linPred[t,] =    RTMB::AD(as.vector(exp(X_z_pred%*%beta_z + Apred%*%x_intensity_S +  Apred%*%x_intensity_ST[,t]))) * k_psi;
     }
   }
 
