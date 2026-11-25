@@ -28,34 +28,35 @@ fitMSLT = function(data,par,conf,rel.tol=1e-10,map = setMap(conf, par),ridge.cor
   
   
   
-  best_mgc = Inf
-  fn_guard <- local({
-    function(par) {
-      objective <- obj$fn(par)
-      mgc <- max(abs(obj$gr(par)))
-      if (!is.na(mgc)) {
-        best_mgc <<- min(best_mgc, mgc)
-        if (best_mgc < ridge_early_stop$best_mgc_limit && mgc > ridge_early_stop$max_mgc) {
-          stop(
-            structure(
-              list(
-                message = sprintf(
-                  "Aborting: mgc = %.2e (best seen %.2e)",
-                  mgc, best_mgc
-                )
-              ),
-              class = c("mgc_abort", "error", "condition")
-            )
-          )
-        }
-      }
-      
-      objective
-    }
-  })
   
   
   if(ridge_early_stop$activated){
+    best_mgc = Inf
+      fn_guard <- local({
+        function(par) {
+          objective <- obj$fn(par)
+          mgc <- max(abs(obj$gr(par)))
+          if (!is.na(mgc)) {
+            best_mgc <<- min(best_mgc, mgc)
+            if (best_mgc < ridge_early_stop$best_mgc_limit && mgc > ridge_early_stop$max_mgc) {
+              stop(
+                structure(
+                  list(
+                    message = sprintf(
+                      "Aborting: mgc = %.2e (best seen %.2e)",
+                      mgc, best_mgc
+                    )
+                  ),
+                  class = c("mgc_abort", "error", "condition")
+                )
+              )
+            }
+          }
+          
+          objective
+        }
+      })
+
     fit = tryCatch({
       opt = NULL
       opt <- nlminb(obj$par, fn_guard, obj$gr,control = list(rel.tol = rel.tol,trace = 1,iter.max = 1000,eval.max = 2000),lower = lower)
